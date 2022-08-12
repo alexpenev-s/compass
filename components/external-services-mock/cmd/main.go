@@ -134,7 +134,7 @@ func main() {
 	wg.Add(2)
 
 	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: time.Minute,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
