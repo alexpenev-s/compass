@@ -24,6 +24,7 @@ type repository struct {
 	upserter repo.UpserterGlobal
 }
 
+// NewRepository returns new destination repository
 func NewRepository() *repository {
 	return &repository{
 		deleter:  repo.NewDeleterGlobal(resource.Destination, destinationTable),
@@ -31,6 +32,7 @@ func NewRepository() *repository {
 	}
 }
 
+// Upsert upserts a destination entity in db
 func (r *repository) Upsert(ctx context.Context, in model.DestinationInput, id, tenantID, bundleID, revisionID string) error {
 	destination := Entity{
 		ID:             id,
@@ -47,6 +49,5 @@ func (r *repository) Upsert(ctx context.Context, in model.DestinationInput, id, 
 
 func (r *repository) Delete(ctx context.Context, revision string) error {
 	conditions := repo.Conditions{repo.NewNotEqualCondition(revisionColumn, revision)}
-	r.deleter.DeleteManyGlobal(ctx, conditions)
-	return nil
+	return r.deleter.DeleteManyGlobal(ctx, conditions)
 }

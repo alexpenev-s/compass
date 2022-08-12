@@ -78,6 +78,7 @@ type TenantProviderConfig struct {
 	SubscriptionProviderAppNameProperty string `envconfig:"APP_TENANT_PROVIDER_SUBSCRIPTION_PROVIDER_APP_NAME_PROPERTY,default=subscriptionProviderAppNameProperty"`
 }
 
+// Dependency represents dependency returned from getDependencies callback
 type Dependency struct {
 	Xsappname string `json:"xsappname"`
 }

@@ -383,7 +383,7 @@ func (r *repository) GetScenarioLabelsForRuntimes(ctx context.Context, tenantID 
 	return labelModels, nil
 }
 
-func (r *repository) GetSubdomainLabelForSubscribedRuntime(ctx context.Context, subaccountId string) (*model.Label, error) {
+func (r *repository) GetSubdomainLabelForSubscribedRuntime(ctx context.Context, subaccountID string) (*model.Label, error) {
 	var entity Entity
 
 	persist, err := persistence.FromCtx(ctx)
@@ -402,7 +402,7 @@ func (r *repository) GetSubdomainLabelForSubscribedRuntime(ctx context.Context, 
 		AND external_tenant='%s')
 	AND l.tenant_id IN (
 		SELECT tenant_id
-		FROM tenant_runtime_contexts)`, subaccountId)
+		FROM tenant_runtime_contexts)`, subaccountID)
 
 	err = persist.GetContext(ctx, &entity, query)
 	if err != nil {

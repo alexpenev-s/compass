@@ -6,6 +6,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// DestinationsConfig destination service configuration
 type DestinationsConfig struct {
 	InstanceClientIDPath     string `envconfig:"APP_DESTINATION_INSTANCE_CLIENT_ID_PATH,default=clientid"`
 	InstanceClientSecretPath string `envconfig:"APP_DESTINATION_INSTANCE_CLIENT_SECRET_PATH,default=clientsecret"`
@@ -21,13 +22,14 @@ type DestinationsConfig struct {
 	OAuthMode      oauth.AuthMode `envconfig:"APP_DESTINATION_OAUTH_MODE,default=oauth-mtls"`
 }
 
+// MapInstanceConfigs creates region to destination configuration map
 func (c *DestinationsConfig) MapInstanceConfigs() error {
 	secretData, err := ReadConfigFile(c.DestinationSecretPath)
 	if err != nil {
 		return errors.Wrapf(err, "while getting destinations secret")
 	}
 
-	bindingsMap, err := ParseConfigToJsonMap(secretData)
+	bindingsMap, err := ParseConfigToJSONMap(secretData)
 	if err != nil {
 		return err
 	}

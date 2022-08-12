@@ -9,19 +9,21 @@ import (
 	"time"
 )
 
-// DestinationSyncer missing godoc
 //go:generate mockery --name=DestinationSyncer --output=automock --outpkg=automock --case=underscore --disable-version-string
+// DestinationSyncer missing godoc
 type DestinationSyncer interface {
 	SyncTenantDestinations(ctx context.Context, tenantID string) error
 	GetSubscribedTenantIDs(ctx context.Context) ([]string, error)
 }
 
+// SyncJobConfig configuration for destination sync job
 type SyncJobConfig struct {
 	ElectionCfg       cronjob.ElectionConfig
 	JobSchedulePeriod time.Duration
 	ParallelTenants   int64
 }
 
+// StartDestinationFetcherSyncJob starts destination sync job and blocks
 func StartDestinationFetcherSyncJob(ctx context.Context, cfg SyncJobConfig, destinationSyncer DestinationSyncer) error {
 	resyncJob := cronjob.CronJob{
 		Name: "DestinationFetcherSync",

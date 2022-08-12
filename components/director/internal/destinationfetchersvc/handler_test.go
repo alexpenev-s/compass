@@ -178,7 +178,7 @@ func TestHandler_FetchDestinationsSensitiveData(t *testing.T) {
 			ExpectedStatusCode: http.StatusBadRequest,
 		},
 		{
-			Name:               "Invalid destination query parameter. Missing beggining bracket",
+			Name:               "Invalid destination query parameter. Missing beginning bracket",
 			Request:            reqWithUserContext,
 			DestQueryParameter: "Rand,Mat]",
 			DestinationFetcherSvc: func() *automock.DestinationManager {

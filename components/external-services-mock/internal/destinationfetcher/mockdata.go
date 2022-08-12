@@ -1,6 +1,6 @@
 package destinationfetcher
 
-var destinationsData = map[string][]byte{
+var destinationsSensitiveData = map[string][]byte{
 	"s4ext": []byte(`{
       "owner": {
         "SubaccountId": "8fb6ac72-124e-11ed-861d-0242ac120002",
@@ -9,12 +9,12 @@ var destinationsData = map[string][]byte{
       "destinationConfiguration": {
         "Name": "s4ext",
         "Type": "HTTP",
-        "URL": "https://kaladin.bg",
+        "URL": "https://s4hana.com",
         "Authentication": "BasicAuthentication",
         "ProxyType": "Internet",
         "XFSystemName": "Rock",
         "HTML5.DynamicDestination": "true",
-        "User": "Kaladin",
+        "User": "usr",
         "product.name": "SAP S/4HANA Cloud",
         "Password": "securePass",
       },
@@ -38,10 +38,10 @@ var destinationsData = map[string][]byte{
       "destinationConfiguration": {
         "Name": "expert",
         "Type": "HTTP",
-        "URL": "http://test.bg",
+        "URL": "http://test.com",
         "Authentication": "BasicAuthentication",
         "ProxyType": "Internet",
-        "User": "shallan",
+        "User": "usr",
         "Password": "pass"
       },
       "authTokens": [
@@ -56,3 +56,14 @@ var destinationsData = map[string][]byte{
       ]
     }`),
 }
+
+var destinations = []byte(`[
+	{
+		"Name": "s4ext",
+		"Type": "HTTP"
+	},
+	{
+		"Name": "expert",
+		"Type": "HTTP"
+	}
+]`)

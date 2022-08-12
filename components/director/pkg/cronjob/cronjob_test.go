@@ -81,10 +81,10 @@ func TestCronJob(t *testing.T) {
 					testCase.FnBody(cronJobRuns, cancel)
 				}
 			}
-			cronjob.RunCronJob(ctx, cronjob.ElectionConfig{ElectionEnabled: false}, cronJob)
+			err := cronjob.RunCronJob(ctx, cronjob.ElectionConfig{ElectionEnabled: false}, cronJob)
+			assert.NoError(t, err)
 
 			assert.Equal(t, cronJobRuns, testCase.ExpectedCronJobRuns)
 		})
 	}
-
 }

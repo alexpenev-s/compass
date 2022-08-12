@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// InstanceConfig is a service instance config
 type InstanceConfig struct {
 	ClientID     string
 	ClientSecret string

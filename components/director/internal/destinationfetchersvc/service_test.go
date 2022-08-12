@@ -42,7 +42,7 @@ func TestService_SyncTenantDestinations(t *testing.T) {
 	defer destinationServer.server.Close()
 
 	txGen := txtest.NewTransactionContextGenerator(testErr)
-	destAPIConfig := defaultApiConfig()
+	destAPIConfig := defaultAPIConfig()
 	destConfig := defaultDestinationConfig(t, destinationServer.server.URL)
 
 	testCases := []struct {
@@ -195,7 +195,7 @@ func TestService_FetchDestinationsSensitiveData(t *testing.T) {
 	defer destinationServer.server.Close()
 
 	txGen := txtest.NewTransactionContextGenerator(testErr)
-	destAPIConfig := defaultApiConfig()
+	destAPIConfig := defaultAPIConfig()
 	destConfig := defaultDestinationConfig(t, destinationServer.server.URL)
 
 	testCases := []struct {
@@ -282,7 +282,7 @@ func TestService_FetchDestinationsSensitiveData(t *testing.T) {
 func TestService_GetSubscribedTenantIDs(t *testing.T) {
 	//GIVEN
 	txGen := txtest.NewTransactionContextGenerator(testErr)
-	destAPIConfig := defaultApiConfig()
+	destAPIConfig := defaultAPIConfig()
 	destConfig := defaultDestinationConfig(t, "invalid")
 
 	testCases := []struct {
@@ -408,7 +408,7 @@ func successfulLabelRegionAndSubdomainRequest() *automock.LabelRepo {
 func successfulBundleRepo(bundleID string) func() *automock.BundleRepo {
 	return func() *automock.BundleRepo {
 		bundleRepo := unusedBundleRepo()
-		bundleRepo.On("GetBySystemAndCorrelationId",
+		bundleRepo.On("GetBySystemAndCorrelationID",
 			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
 			[]*model.Bundle{{
 				BaseEntity: &model.BaseEntity{
@@ -421,14 +421,14 @@ func successfulBundleRepo(bundleID string) func() *automock.BundleRepo {
 
 func failingBundleRepo() *automock.BundleRepo {
 	bundleRepo := unusedBundleRepo()
-	bundleRepo.On("GetBySystemAndCorrelationId",
+	bundleRepo.On("GetBySystemAndCorrelationID",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, testErr)
 	return bundleRepo
 }
 
 func bundleRepoWithNoBundles() *automock.BundleRepo {
 	bundleRepo := unusedBundleRepo()
-	bundleRepo.On("GetBySystemAndCorrelationId",
+	bundleRepo.On("GetBySystemAndCorrelationID",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]*model.Bundle{}, nil)
 	return bundleRepo
 }
@@ -469,7 +469,7 @@ func failingTenantRepo() *automock.TenantRepo {
 	return tenantRepo
 }
 
-func defaultApiConfig() destinationfetchersvc.DestinationServiceAPIConfig {
+func defaultAPIConfig() destinationfetchersvc.DestinationServiceAPIConfig {
 	return destinationfetchersvc.DestinationServiceAPIConfig{
 		GoroutineLimit:                2,
 		RetryInterval:                 0,
@@ -491,7 +491,7 @@ func defaultDestinationConfig(t *testing.T, destinationServerURL string) config.
 		ClientID:     tenantID,
 		ClientSecret: "secret",
 		URL:          destinationServerURL,
-		TokenURL:     destinationServerURL + "/oauth/token",
+		TokenURL:     destinationServerURL,
 		Cert:         string(cert),
 		Key:          string(key),
 	}
@@ -499,6 +499,6 @@ func defaultDestinationConfig(t *testing.T, destinationServerURL string) config.
 		RegionToInstanceConfig: map[string]config.InstanceConfig{
 			region: instanceConfig,
 		},
-		OauthTokenPath: "/oauth-path",
+		OauthTokenPath: "/oauth/token",
 	}
 }

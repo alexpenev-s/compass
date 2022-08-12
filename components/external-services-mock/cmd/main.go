@@ -207,7 +207,7 @@ func initDefaultServer(cfg config, key *rsa.PrivateKey, staticMappingClaims map[
 	destinationHandler := destinationfetcher.NewHandler()
 	destinationsRouter.HandleFunc("/subaccountDestinations",
 		destinationHandler.GetSubaccountDestinationsPage).Methods(http.MethodGet)
-	destinationsRouter.HandleFunc("/destinations/{id}",
+	destinationsRouter.HandleFunc("/destinations/{name}",
 		destinationHandler.GetSensitiveData).Methods(http.MethodGet)
 
 	// System fetcher handlers

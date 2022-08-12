@@ -19,8 +19,7 @@ import (
 )
 
 const (
-	bundleTable      string = `public.bundles`
-	applicationTable string = `public.applications`
+	bundleTable string = `public.bundles`
 )
 
 var (
@@ -37,29 +36,29 @@ type EntityConverter interface {
 }
 
 type pgRepository struct {
-	existQuerier          repo.ExistQuerier
-	singleGetter          repo.SingleGetter
-	singleGlobalGetter    repo.SingleGetterGlobal
-	deleter               repo.Deleter
-	lister                repo.Lister
-	unionLister           repo.UnionLister
-	creator               repo.Creator
-	updater               repo.Updater
-	conv                  EntityConverter
+	existQuerier       repo.ExistQuerier
+	singleGetter       repo.SingleGetter
+	singleGlobalGetter repo.SingleGetterGlobal
+	deleter            repo.Deleter
+	lister             repo.Lister
+	unionLister        repo.UnionLister
+	creator            repo.Creator
+	updater            repo.Updater
+	conv               EntityConverter
 }
 
 // NewRepository missing godoc
 func NewRepository(conv EntityConverter) *pgRepository {
 	return &pgRepository{
-		existQuerier:          repo.NewExistQuerier(bundleTable),
-		singleGetter:          repo.NewSingleGetter(bundleTable, bundleColumns),
-		singleGlobalGetter:    repo.NewSingleGetterGlobal(resource.Bundle, bundleTable, bundleColumns),
-		deleter:               repo.NewDeleter(bundleTable),
-		lister:                repo.NewLister(bundleTable, bundleColumns),
-		unionLister:           repo.NewUnionLister(bundleTable, bundleColumns),
-		creator:               repo.NewCreator(bundleTable, bundleColumns),
-		updater:               repo.NewUpdater(bundleTable, updatableColumns, []string{"id"}),
-		conv:                  conv,
+		existQuerier:       repo.NewExistQuerier(bundleTable),
+		singleGetter:       repo.NewSingleGetter(bundleTable, bundleColumns),
+		singleGlobalGetter: repo.NewSingleGetterGlobal(resource.Bundle, bundleTable, bundleColumns),
+		deleter:            repo.NewDeleter(bundleTable),
+		lister:             repo.NewLister(bundleTable, bundleColumns),
+		unionLister:        repo.NewUnionLister(bundleTable, bundleColumns),
+		creator:            repo.NewCreator(bundleTable, bundleColumns),
+		updater:            repo.NewUpdater(bundleTable, updatableColumns, []string{"id"}),
+		conv:               conv,
 	}
 }
 
@@ -211,7 +210,7 @@ func (r *pgRepository) ListByApplicationIDNoPaging(ctx context.Context, tenantID
 	return bundles, nil
 }
 
-func (r *pgRepository) GetBySystemAndCorrelationId(ctx context.Context, tenantId, systemName, systemURL, correlationId string) ([]*model.Bundle, error) {
+func (r *pgRepository) GetBySystemAndCorrelationID(ctx context.Context, tenantID, systemName, systemURL, correlationID string) ([]*model.Bundle, error) {
 	bundleCollection := BundleCollection{}
 
 	persist, err := persistence.FromCtx(ctx)
@@ -233,7 +232,7 @@ func (r *pgRepository) GetBySystemAndCorrelationId(ctx context.Context, tenantId
 		AND name='%s'
 		AND base_url='%s'
 	)
-	AND correlation_ids::jsonb ? '%s'`, tenantId, systemName, systemURL, correlationId)
+	AND correlation_ids::jsonb ? '%s'`, tenantID, systemName, systemURL, correlationID)
 
 	err = persist.SelectContext(ctx, &bundleCollection, query)
 	if err != nil {

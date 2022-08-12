@@ -38,13 +38,13 @@ func (_m *LabelRepo) GetByKey(ctx context.Context, tenant string, objectType mod
 	return r0, r1
 }
 
-// GetSubdomainLabelForSubscribedRuntime provides a mock function with given fields: ctx, tenantId
-func (_m *LabelRepo) GetSubdomainLabelForSubscribedRuntime(ctx context.Context, tenantId string) (*model.Label, error) {
-	ret := _m.Called(ctx, tenantId)
+// GetSubdomainLabelForSubscribedRuntime provides a mock function with given fields: ctx, tenantID
+func (_m *LabelRepo) GetSubdomainLabelForSubscribedRuntime(ctx context.Context, tenantID string) (*model.Label, error) {
+	ret := _m.Called(ctx, tenantID)
 
 	var r0 *model.Label
 	if rf, ok := ret.Get(0).(func(context.Context, string) *model.Label); ok {
-		r0 = rf(ctx, tenantId)
+		r0 = rf(ctx, tenantID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*model.Label)
@@ -53,7 +53,7 @@ func (_m *LabelRepo) GetSubdomainLabelForSubscribedRuntime(ctx context.Context, 
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, tenantId)
+		r1 = rf(ctx, tenantID)
 	} else {
 		r1 = ret.Error(1)
 	}

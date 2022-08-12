@@ -23,6 +23,7 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
+// DestinationServiceAPIConfig destination service api configuration
 type DestinationServiceAPIConfig struct {
 	GoroutineLimit                int64         `envconfig:"APP_DESTINATIONS_SENSITIVE_GOROUTINE_LIMIT,default=10"`
 	RetryInterval                 time.Duration `envconfig:"APP_DESTINATIONS_RETRY_INTERVAL,default=100ms"`
@@ -37,20 +38,22 @@ type DestinationServiceAPIConfig struct {
 	PagingCountHeader             string        `envconfig:"APP_DESTINATIONS_PAGE_COUNT_HEADER,default=Page-Count"`
 }
 
+// Client destination client
 type Client struct {
 	httpClient *http.Client
 	apiConfig  DestinationServiceAPIConfig
 	apiURL     string
 }
 
+// DestinationResponse paged response from destination service
 type DestinationResponse struct {
 	destinations []model.DestinationInput
 	pageCount    string
 }
 
+// NewClient returns new destination client
 func NewClient(instanceConfig config.InstanceConfig, apiConfig DestinationServiceAPIConfig,
 	tokenPath, subdomain string) (*Client, error) {
-
 	ctx := context.Background()
 
 	baseTokenURL, err := url.Parse(instanceConfig.TokenURL)
@@ -97,6 +100,7 @@ func NewClient(instanceConfig config.InstanceConfig, apiConfig DestinationServic
 	}, nil
 }
 
+// FetchTenantDestinationsPage returns a page of destinations
 func (c *Client) FetchTenantDestinationsPage(ctx context.Context, page string) (*DestinationResponse, error) {
 	url := c.apiURL + c.apiConfig.EndpointGetTenantDestinations
 	req, err := c.buildRequest(ctx, url, page)
@@ -110,6 +114,7 @@ func (c *Client) FetchTenantDestinationsPage(ctx context.Context, page string) (
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
 		return nil, errors.Errorf("received status code %d when trying to fetch destinations", res.StatusCode)
@@ -145,6 +150,7 @@ func (c *Client) buildRequest(ctx context.Context, url string, page string) (*ht
 	return req, nil
 }
 
+// FetchDestinationSensitiveData returns sensitive data of a destination
 func (c *Client) FetchDestinationSensitiveData(ctx context.Context, destinationName string) ([]byte, error) {
 	url := fmt.Sprintf("%s%s/%s", c.apiURL, c.apiConfig.EndpointFindDestination, destinationName)
 	log.C(ctx).Infof("Getting destination data from: %s \n", url)
@@ -157,6 +163,7 @@ func (c *Client) FetchDestinationSensitiveData(ctx context.Context, destinationN
 	if err != nil {
 		return nil, err
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode == http.StatusNotFound {
 		return nil, apperrors.NewNotFoundError(resource.Destination, destinationName)
@@ -180,15 +187,16 @@ func (c *Client) sendRequestWithRetry(req *http.Request) (*http.Response, error)
 	var response *http.Response
 	err := retry.Do(func() error {
 		res, err := c.httpClient.Do(req)
+		if err != nil {
+			return errors.Wrap(err, "failed to execute HTTP request")
+		}
+
 		if err == nil && res.StatusCode < http.StatusInternalServerError {
 			response = res
 			return nil
 		}
 
-		if err != nil {
-			return errors.Wrap(err, "failed to execute HTTP request")
-		}
-
+		defer res.Body.Close()
 		body, err := ioutil.ReadAll(res.Body)
 
 		if err != nil {

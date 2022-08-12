@@ -15,13 +15,13 @@ type BundleRepo struct {
 	mock.Mock
 }
 
-// GetBySystemAndCorrelationId provides a mock function with given fields: ctx, tenantId, systemName, systemURL, correlationId
-func (_m *BundleRepo) GetBySystemAndCorrelationId(ctx context.Context, tenantId string, systemName string, systemURL string, correlationId string) ([]*model.Bundle, error) {
-	ret := _m.Called(ctx, tenantId, systemName, systemURL, correlationId)
+// GetBySystemAndCorrelationID provides a mock function with given fields: ctx, tenantID, systemName, systemURL, correlationID
+func (_m *BundleRepo) GetBySystemAndCorrelationID(ctx context.Context, tenantID string, systemName string, systemURL string, correlationID string) ([]*model.Bundle, error) {
+	ret := _m.Called(ctx, tenantID, systemName, systemURL, correlationID)
 
 	var r0 []*model.Bundle
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, string, string) []*model.Bundle); ok {
-		r0 = rf(ctx, tenantId, systemName, systemURL, correlationId)
+		r0 = rf(ctx, tenantID, systemName, systemURL, correlationID)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*model.Bundle)
@@ -30,7 +30,7 @@ func (_m *BundleRepo) GetBySystemAndCorrelationId(ctx context.Context, tenantId 
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, string, string, string, string) error); ok {
-		r1 = rf(ctx, tenantId, systemName, systemURL, correlationId)
+		r1 = rf(ctx, tenantID, systemName, systemURL, correlationID)
 	} else {
 		r1 = ret.Error(1)
 	}

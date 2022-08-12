@@ -417,7 +417,7 @@ func dependenciesConfigToMap(cfg tenantfetcher.HandlerConfig) (map[string][]tena
 	}
 
 	dependenciesConfig := make(map[string][]tenantfetcher.Dependency)
-	config, err := configprovider.ParseConfigToJsonMap(secretData)
+	config, err := configprovider.ParseConfigToJSONMap(secretData)
 	if err != nil {
 		return nil, errors.Wrapf(err, "while parsing tenant service dependencies config file")
 	}

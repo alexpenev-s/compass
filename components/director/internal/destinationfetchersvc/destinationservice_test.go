@@ -2,6 +2,7 @@ package destinationfetchersvc_test
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"net"
 	"net/http"
@@ -44,13 +45,22 @@ const (
 )
 
 type destinationHandler struct {
-	t                        *testing.T
-	tenantDestinationHandler func(w http.ResponseWriter, req *http.Request)
-	fetchDestinationHandler  func(w http.ResponseWriter, req *http.Request)
-	tokenHandler             func(w http.ResponseWriter, req *http.Request)
+	t *testing.T
 }
 
-func (dh *destinationHandler) defaultTenantDestinationHandler(w http.ResponseWriter, req *http.Request) {
+func (dh *destinationHandler) mux() *http.ServeMux {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/subaccountDestinations", dh.tenantDestinationHandler)
+	mux.HandleFunc("/destinations/", dh.fetchDestinationHandler)
+	mux.HandleFunc("/oauth/token", dh.tokenHandler)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		dh.t.Logf("Unhandled request to mocked destination service %s", r.URL.String())
+		w.WriteHeader(http.StatusInternalServerError)
+	})
+	return mux
+}
+
+func (dh *destinationHandler) tenantDestinationHandler(w http.ResponseWriter, req *http.Request) {
 	query := req.URL.Query()
 	page := query.Get("$page")
 
@@ -59,10 +69,12 @@ func (dh *destinationHandler) defaultTenantDestinationHandler(w http.ResponseWri
 	switch page {
 	case "1":
 		w.Header().Set("Page-Count", "2")
-		w.Write([]byte(fmt.Sprintf("[%s]", exampleDestination1)))
+		_, err := w.Write([]byte(fmt.Sprintf("[%s]", exampleDestination1)))
+		assert.NoError(dh.t, err)
 	case "2":
 		w.Header().Set("Page-Count", "2")
-		w.Write([]byte(fmt.Sprintf("[%s]", exampleDestination2)))
+		_, err := w.Write([]byte(fmt.Sprintf("[%s]", exampleDestination2)))
+		assert.NoError(dh.t, err)
 	default:
 		dh.t.Logf("Expected page size to be 1 or 2, got '%s'", page)
 		w.WriteHeader(http.StatusBadRequest)
@@ -74,48 +86,28 @@ var defaultDestinations = map[string]string{
 	"dest2": `{"name": "dest2", "destinationConfiguration": {}}`,
 }
 
-func (dh *destinationHandler) defaultFetchDestinationHandler(w http.ResponseWriter, req *http.Request) {
+func (dh *destinationHandler) fetchDestinationHandler(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 	w.Header().Set("Content-Type", "application/json")
 	for destinationName, destination := range defaultDestinations {
 		if strings.HasSuffix(path, "/"+destinationName) {
-			w.Write([]byte(destination))
+			_, err := w.Write([]byte(destination))
+			assert.NoError(dh.t, err)
 			return
 		}
 	}
 	w.WriteHeader(http.StatusNotFound)
 }
 
-func (dh *destinationHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	path := req.URL.Path
-	if strings.HasPrefix(path, "/subaccountDestinations") {
-		if dh.tenantDestinationHandler != nil {
-			dh.tenantDestinationHandler(w, req)
-		} else {
-			dh.defaultTenantDestinationHandler(w, req)
-		}
-		return
-	}
-	if strings.HasPrefix(path, "/destinations") {
-		if dh.fetchDestinationHandler != nil {
-			dh.fetchDestinationHandler(w, req)
-		} else {
-			dh.defaultFetchDestinationHandler(w, req)
-		}
-		return
-	}
-	if strings.HasPrefix(path, "/oauth/token") {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		w.Write([]byte(`{
+func (dh *destinationHandler) tokenHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	_, err := w.Write([]byte(`{
 			"access_token": "accesstoken",
 			"token_type": "tokentype",
 			"refresh_token": "refreshtoken",
 			"expires_in": 100
 		}`))
-		return
-	}
-	w.WriteHeader(500)
+	assert.NoError(dh.t, err)
 }
 
 type destinationServer struct {
@@ -125,7 +117,7 @@ type destinationServer struct {
 
 func newDestinationServer(t *testing.T) destinationServer {
 	destinationHandler := &destinationHandler{t: t}
-	httpServer := httptest.NewUnstartedServer(destinationHandler)
+	httpServer := httptest.NewUnstartedServer(destinationHandler.mux())
 	var err error
 	httpServer.Listener, err = net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)

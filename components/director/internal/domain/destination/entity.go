@@ -1,5 +1,6 @@
 package destination
 
+// Entity is a representation of a destination entity in the database.
 type Entity struct {
 	ID             string `db:"id"`
 	Name           string `db:"name"`

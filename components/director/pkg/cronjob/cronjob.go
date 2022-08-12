@@ -50,7 +50,7 @@ func (r *cronJobRunner) Start(ctx context.Context) {
 		case <-newCtx.Done():
 			return
 		default:
-			jobTime := time.Now().Sub(start)
+			jobTime := time.Since(start)
 			log.C(ctx).Infof("CronJob %s executed for %s", r.CronJob.Name, jobTime.String())
 			if jobTime < r.CronJob.SchedulePeriod {
 				waitPeriod := r.CronJob.SchedulePeriod - jobTime
@@ -64,7 +64,6 @@ func (r *cronJobRunner) Start(ctx context.Context) {
 			}
 		}
 	}
-
 }
 
 func (r *cronJobRunner) Stop() {

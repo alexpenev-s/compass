@@ -16,6 +16,7 @@ const (
 	destQueryParameter = "dest"
 )
 
+// HandlerConfig destination handler configuration
 type HandlerConfig struct {
 	SyncDestinationsEndpoint      string `envconfig:"APP_DESTINATIONS_SYNC_ENDPOINT,default=/v1/syncDestinations"`
 	DestinationsSensitiveEndpoint string `envconfig:"APP_DESTINATIONS_SENSITIVE_DATA_ENDPOINT,default=/v1/destinations"`
@@ -28,6 +29,7 @@ type handler struct {
 }
 
 //go:generate mockery --name=DestinationManager --output=automock --outpkg=automock --case=underscore --disable-version-string
+// DestinationManager missing godoc
 type DestinationManager interface {
 	SyncTenantDestinations(ctx context.Context, tenantID string) error
 	FetchDestinationsSensitiveData(ctx context.Context, tenantID string, destinationNames []string) ([]byte, error)
@@ -78,7 +80,7 @@ func getDestinationNames(namesRaw string) ([]string, error) {
 	names := strings.Split(namesRawWithoutBrackets, ",")
 
 	if sliceContainsEmptyString(names) {
-		return nil, fmt.Errorf("name parameter containes empty element")
+		return nil, fmt.Errorf("name parameter contains empty element")
 	}
 
 	for idx, name := range names {
@@ -121,7 +123,9 @@ func (h *handler) FetchDestinationsSensitiveData(writer http.ResponseWriter, req
 		return
 	}
 
-	writer.Write(json)
+	if _, err = writer.Write(json); err != nil {
+		log.C(ctx).WithError(err).Error("Could not write response")
+	}
 }
 
 func sliceContainsEmptyString(s []string) bool {
@@ -144,10 +148,10 @@ func (h *handler) readTenantFromHeader(header string) (string, error) {
 		return "", fmt.Errorf("failed to parse %s header", h.config.UserContextHeader)
 	}
 
-	tenantId, ok := headerMap[tenantIDKey]
+	tenantID, ok := headerMap[tenantIDKey]
 	if !ok {
 		return "", fmt.Errorf("%s not found in %s header", tenantIDKey, h.config.UserContextHeader)
 	}
 
-	return tenantId, nil
+	return tenantID, nil
 }

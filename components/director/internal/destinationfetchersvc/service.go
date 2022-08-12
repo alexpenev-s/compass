@@ -23,32 +23,38 @@ const (
 )
 
 //go:generate mockery --name=UUIDService --output=automock --outpkg=automock --case=underscore --disable-version-string
+// UUIDService missing godoc
 type UUIDService interface {
 	Generate() string
 }
 
 //go:generate mockery --name=DestinationRepo --output=automock --outpkg=automock --case=underscore --disable-version-string
+// DestinationRepo missing godoc
 type DestinationRepo interface {
 	Upsert(ctx context.Context, in model.DestinationInput, id, tenantID, bundleID, revision string) error
 	Delete(ctx context.Context, revision string) error
 }
 
 //go:generate mockery --name=LabelRepo --output=automock --outpkg=automock --case=underscore --disable-version-string
+// LabelRepo missing godoc
 type LabelRepo interface {
-	GetSubdomainLabelForSubscribedRuntime(ctx context.Context, tenantId string) (*model.Label, error)
+	GetSubdomainLabelForSubscribedRuntime(ctx context.Context, tenantID string) (*model.Label, error)
 	GetByKey(ctx context.Context, tenant string, objectType model.LabelableObject, objectID, key string) (*model.Label, error)
 }
 
 //go:generate mockery --name=BundleRepo --output=automock --outpkg=automock --case=underscore --disable-version-string
+// BundleRepo missing godoc
 type BundleRepo interface {
-	GetBySystemAndCorrelationId(ctx context.Context, tenantId, systemName, systemURL, correlationId string) ([]*model.Bundle, error)
+	GetBySystemAndCorrelationID(ctx context.Context, tenantID, systemName, systemURL, correlationID string) ([]*model.Bundle, error)
 }
 
 //go:generate mockery --name=TenantRepo --output=automock --outpkg=automock --case=underscore --disable-version-string
+// TenantRepo missing godoc
 type TenantRepo interface {
 	GetBySubscribedRuntimes(ctx context.Context) ([]*model.BusinessTenantMapping, error)
 }
 
+// DestinationService missing godoc
 type DestinationService struct {
 	Transactioner      persistence.Transactioner
 	UUIDSvc            UUIDService
@@ -60,6 +66,7 @@ type DestinationService struct {
 	TenantRepo         TenantRepo
 }
 
+// GetSubscribedTenantIDs returns subscribed tenants
 func (d *DestinationService) GetSubscribedTenantIDs(ctx context.Context) ([]string, error) {
 	tenants, err := d.getSubscribedTenants(ctx)
 	if err != nil {
@@ -94,6 +101,7 @@ func (d *DestinationService) getSubscribedTenants(ctx context.Context) ([]*model
 	return tenants, nil
 }
 
+// SyncTenantDestinations syncs destinations for a given tenant
 func (d *DestinationService) SyncTenantDestinations(ctx context.Context, tenantID string) error {
 	subdomainLabel, err := d.getSubscribedSubdomainLabel(ctx, tenantID)
 	if err != nil {
@@ -142,8 +150,8 @@ func (d *DestinationService) mapDestinationsToTenant(ctx context.Context, tenant
 	defer d.Transactioner.RollbackUnlessCommitted(ctx, tx)
 
 	for _, destination := range destinations {
-		correlationID := correlationIDPrefix + destination.CommunicationScenarioId
-		bundles, err := d.BundleRepo.GetBySystemAndCorrelationId(ctx, tenant, destination.XFSystemName, destination.URL, correlationID)
+		correlationID := correlationIDPrefix + destination.CommunicationScenarioID
+		bundles, err := d.BundleRepo.GetBySystemAndCorrelationID(ctx, tenant, destination.XFSystemName, destination.URL, correlationID)
 
 		if len(bundles) == 0 {
 			log.C(ctx).Infof("No bundles found for system '%s', url '%s', correlation id '%s'", destination.XFSystemName, destination.URL, correlationID)
@@ -197,6 +205,7 @@ func (d *DestinationService) walkthroughPages(ctx context.Context, client *Clien
 	return nil
 }
 
+// FetchDestinationsSensitiveData returns sensitive data of destinations for a given tenant
 func (d *DestinationService) FetchDestinationsSensitiveData(ctx context.Context, tenantID string, destinationNames []string) ([]byte, error) {
 	subdomainLabel, err := d.getSubscribedSubdomainLabel(ctx, tenantID)
 	if err != nil {
@@ -258,7 +267,6 @@ func (d *DestinationService) FetchDestinationsSensitiveData(ctx context.Context,
 
 func fetchDestination(ctx context.Context, dest string, weighted *semaphore.Weighted,
 	client *Client, resChan chan []byte, errChan chan error) {
-
 	log.C(ctx).Infof("Fetching data for destination: %s \n", dest)
 	defer weighted.Release(1)
 	result, err := client.FetchDestinationSensitiveData(ctx, dest)

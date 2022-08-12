@@ -135,9 +135,7 @@ func main() {
 	runMainSrv()
 }
 
-func configureAuthMiddleware(
-	ctx context.Context, httpClient *http.Client, router *mux.Router, cfg securityConfig, requiredScopes ...string) {
-
+func configureAuthMiddleware(ctx context.Context, httpClient *http.Client, router *mux.Router, cfg securityConfig, requiredScopes ...string) {
 	scopeValidator := claims.NewScopesValidator(requiredScopes)
 	middleware := authenticator.New(httpClient, cfg.JwksEndpoint, cfg.AllowJWTSigningNone, "", scopeValidator)
 	router.Use(middleware.Handler())
@@ -186,7 +184,6 @@ func getDestinationService(cfg config, transact persistence.Transactioner) *dest
 
 func initAPIHandler(ctx context.Context, httpClient *http.Client,
 	cfg config, destService *destinationfetcher.DestinationService) http.Handler {
-
 	logger := log.C(ctx)
 	mainRouter := mux.NewRouter()
 	mainRouter.Use(correlation.AttachCorrelationIDToContext(), log.RequestLogger())

@@ -109,7 +109,7 @@ func TestClient_SensitiveDataEndpoint(t *testing.T) {
 	apiConfig.EndpointFindDestination = endpoint + sensitiveEndpoint
 	apiConfig.EndpointGetTenantDestinations = endpoint + syncEndpoint
 	apiConfig.RetryAttempts = 3
-	apiConfig.RetryInterval = time.Duration(100 * time.Millisecond)
+	apiConfig.RetryInterval = 100 * time.Millisecond
 
 	cert, key := generateTestCertAndKey(t, "test")
 	instanceCfg := config.InstanceConfig{
@@ -227,7 +227,6 @@ func TestNewClient(t *testing.T) {
 	cert, key := generateTestCertAndKey(t, "test")
 
 	t.Run("mtls+client-secret mode", func(t *testing.T) {
-
 		instanceCfg := config.InstanceConfig{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,

@@ -1,10 +1,9 @@
 package destinationfetcher
 
 import (
-	"net/http"
-	"path"
-
+	"github.com/gorilla/mux"
 	"github.com/kyma-incubator/compass/components/director/pkg/log"
+	"net/http"
 )
 
 type Handler struct{}
@@ -15,9 +14,9 @@ func NewHandler() *Handler {
 
 func (h *Handler) GetSensitiveData(writer http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	destinationName := path.Base(req.URL.String())
+	destinationName := mux.Vars(req)["name"]
 	log.C(ctx).Infof("Sending sensitive data for destination: %s", destinationName)
-	data, ok := destinationsData[destinationName]
+	data, ok := destinationsSensitiveData[destinationName]
 
 	if !ok {
 		http.Error(writer, "Not Found", http.StatusNotFound)
@@ -29,6 +28,7 @@ func (h *Handler) GetSensitiveData(writer http.ResponseWriter, req *http.Request
 	}
 }
 
-func (h *Handler) GetSubaccountDestinationsPage(writer http.ResponseWriter, req *http.Request) {
-	writer.WriteHeader(http.StatusOK)
+func (h *Handler) GetSubaccountDestinationsPage(writer http.ResponseWriter, _ *http.Request) {
+	writer.Header().Set("Page-Count", "1")
+	writer.Write(destinations)
 }

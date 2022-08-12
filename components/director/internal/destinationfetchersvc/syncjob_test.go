@@ -119,5 +119,4 @@ func TestDestinationSyncJob(t *testing.T) {
 		destinationSyncer.Mock.AssertNumberOfCalls(t, "GetSubscribedTenantIDs", 1)
 		destinationSyncer.AssertExpectations(t)
 	})
-
 }
