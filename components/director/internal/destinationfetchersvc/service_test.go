@@ -3,10 +3,11 @@ package destinationfetchersvc_test
 import (
 	"context"
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/util/json"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"k8s.io/apimachinery/pkg/util/json"
 
 	"github.com/kyma-incubator/compass/components/director/internal/destinationfetchersvc"
 	"github.com/kyma-incubator/compass/components/director/internal/destinationfetchersvc/automock"
@@ -27,6 +28,7 @@ const (
 	tenantLabelKey      = "subaccount"
 	regionLabelKey      = "region"
 	region              = "region1"
+	UUID                = "9b26a428-d526-469c-a5ef-2856f3ce0430"
 	subdomainLabelValue = "127" // will be replaced in 127.0.0.1 when fetching token for destination service
 )
 
@@ -57,7 +59,7 @@ func TestService_SyncTenantDestinations(t *testing.T) {
 		{
 			Name: "Sync tenant destinations",
 			Transactioner: func() (*persistenceAutomock.PersistenceTx, *persistenceAutomock.Transactioner) {
-				return txGen.ThatSucceedsMultipleTimes(4)
+				return txGen.ThatSucceedsMultipleTimes(5)
 			},
 			LabelRepo:   successfulLabelRegionAndSubdomainRequest,
 			BundleRepo:  successfulBundleRepo("bundleID"),
@@ -67,27 +69,27 @@ func TestService_SyncTenantDestinations(t *testing.T) {
 		{
 			Name: "When getting bundles fails should continue to process destinations",
 			Transactioner: func() (*persistenceAutomock.PersistenceTx, *persistenceAutomock.Transactioner) {
-				return txGen.ThatSucceedsMultipleTimes(4)
+				return txGen.ThatSucceedsMultipleTimes(5)
 			},
 			LabelRepo:   successfulLabelRegionAndSubdomainRequest,
 			BundleRepo:  failingBundleRepo,
-			DestRepo:    unusedDestinationsRepo,
-			UUIDService: unusedUUIDService,
+			DestRepo:    successfulDeleteDestinationRepo,
+			UUIDService: successfulUUIDService,
 		},
 		{
-			Name: "When getting bundles fails should continue to process destinations",
+			Name: "When no bundles are returned should continue to process destinations",
 			Transactioner: func() (*persistenceAutomock.PersistenceTx, *persistenceAutomock.Transactioner) {
-				return txGen.ThatSucceedsMultipleTimes(4)
+				return txGen.ThatSucceedsMultipleTimes(5)
 			},
 			LabelRepo:   successfulLabelRegionAndSubdomainRequest,
 			BundleRepo:  bundleRepoWithNoBundles,
-			DestRepo:    unusedDestinationsRepo,
-			UUIDService: unusedUUIDService,
+			DestRepo:    successfulDeleteDestinationRepo,
+			UUIDService: successfulUUIDService,
 		},
 		{
-			Name: "When destination upsert fails should continue to process destinations",
+			Name: "When destination upsert or delete fails should continue to process destinations",
 			Transactioner: func() (*persistenceAutomock.PersistenceTx, *persistenceAutomock.Transactioner) {
-				return txGen.ThatSucceedsMultipleTimes(4)
+				return txGen.ThatSucceedsMultipleTimes(5)
 			},
 			LabelRepo:   successfulLabelRegionAndSubdomainRequest,
 			BundleRepo:  successfulBundleRepo("bundleID"),
@@ -371,7 +373,7 @@ func unusedUUIDService() *automock.UUIDService          { return &automock.UUIDS
 
 func successfulUUIDService() *automock.UUIDService {
 	uuidService := &automock.UUIDService{}
-	uuidService.On("Generate").Return("9b26a428-d526-469c-a5ef-2856f3ce0430")
+	uuidService.On("Generate").Return(UUID)
 	return uuidService
 }
 
@@ -433,11 +435,20 @@ func bundleRepoWithNoBundles() *automock.BundleRepo {
 	return bundleRepo
 }
 
+func successfulDeleteDestinationRepo() *automock.DestinationRepo {
+	destinationRepo := unusedDestinationsRepo()
+	destinationRepo.On("Delete",
+		mock.Anything, UUID, labelTenantID).Return(nil)
+	return destinationRepo
+}
+
 func successfulDestinationRepo(bundleID string) func() *automock.DestinationRepo {
 	return func() *automock.DestinationRepo {
 		destinationRepo := unusedDestinationsRepo()
 		destinationRepo.On("Upsert",
 			mock.Anything, mock.Anything, mock.Anything, mock.Anything, bundleID, mock.Anything).Return(nil)
+		destinationRepo.On("Delete",
+			mock.Anything, UUID, labelTenantID).Return(nil)
 		return destinationRepo
 	}
 }
@@ -446,6 +457,8 @@ func failingDestinationRepo() *automock.DestinationRepo {
 	destinationRepo := unusedDestinationsRepo()
 	destinationRepo.On("Upsert",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(testErr)
+	destinationRepo.On("Delete",
+		mock.Anything, UUID, labelTenantID).Return(testErr)
 	return destinationRepo
 }
 

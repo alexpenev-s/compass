@@ -11,6 +11,7 @@ import (
 const (
 	destinationTable = "public.destinations"
 	revisionColumn   = "revision"
+	tenantIDColumn   = "tenant_id"
 )
 
 var (
@@ -47,7 +48,7 @@ func (r *repository) Upsert(ctx context.Context, in model.DestinationInput, id, 
 	return r.upserter.UpsertGlobal(ctx, destination)
 }
 
-func (r *repository) Delete(ctx context.Context, revision string) error {
-	conditions := repo.Conditions{repo.NewNotEqualCondition(revisionColumn, revision)}
+func (r *repository) Delete(ctx context.Context, revision, tenantID string) error {
+	conditions := repo.Conditions{repo.NewNotEqualCondition(revisionColumn, revision), repo.NewEqualCondition(tenantIDColumn, tenantID)}
 	return r.deleter.DeleteManyGlobal(ctx, conditions)
 }
