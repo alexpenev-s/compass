@@ -437,7 +437,7 @@ func bundleRepoWithNoBundles() *automock.BundleRepo {
 
 func successfulDeleteDestinationRepo() *automock.DestinationRepo {
 	destinationRepo := unusedDestinationsRepo()
-	destinationRepo.On("Delete",
+	destinationRepo.On("DeleteOld",
 		mock.Anything, UUID, labelTenantID).Return(nil)
 	return destinationRepo
 }
@@ -447,7 +447,7 @@ func successfulDestinationRepo(bundleID string) func() *automock.DestinationRepo
 		destinationRepo := unusedDestinationsRepo()
 		destinationRepo.On("Upsert",
 			mock.Anything, mock.Anything, mock.Anything, mock.Anything, bundleID, mock.Anything).Return(nil)
-		destinationRepo.On("Delete",
+		destinationRepo.On("DeleteOld",
 			mock.Anything, UUID, labelTenantID).Return(nil)
 		return destinationRepo
 	}
@@ -457,7 +457,7 @@ func failingDestinationRepo() *automock.DestinationRepo {
 	destinationRepo := unusedDestinationsRepo()
 	destinationRepo.On("Upsert",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(testErr)
-	destinationRepo.On("Delete",
+	destinationRepo.On("DeleteOld",
 		mock.Anything, UUID, labelTenantID).Return(testErr)
 	return destinationRepo
 }

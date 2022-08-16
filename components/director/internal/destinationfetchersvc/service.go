@@ -32,7 +32,7 @@ type UUIDService interface {
 // DestinationRepo missing godoc
 type DestinationRepo interface {
 	Upsert(ctx context.Context, in model.DestinationInput, id, tenantID, bundleID, revision string) error
-	Delete(ctx context.Context, revision, tenantID string) error
+	DeleteOld(ctx context.Context, latestRevision, tenantID string) error
 }
 
 //go:generate mockery --name=LabelRepo --output=automock --outpkg=automock --case=underscore --disable-version-string
@@ -81,7 +81,7 @@ func (d *DestinationService) GetSubscribedTenantIDs(ctx context.Context) ([]stri
 }
 
 func (d *DestinationService) getSubscribedTenants(ctx context.Context) ([]*model.BusinessTenantMapping, error) {
-	var tenants []*model.BusinessTenantMapping = nil
+	var tenants []*model.BusinessTenantMapping
 	transactionError := d.transaction(ctx, func() error {
 		var err error
 		tenants, err = d.TenantRepo.GetBySubscribedRuntimes(ctx)
@@ -95,15 +95,10 @@ func (d *DestinationService) getSubscribedTenants(ctx context.Context) ([]*model
 	return tenants, transactionError
 }
 
-func (d *DestinationService) getSubdomainLabelTenantAndClient(ctx context.Context, tenantID string) (*Client, string, error) {
-	subdomainLabel, err := d.getSubscribedSubdomainLabel(ctx, tenantID)
-	if err != nil {
-		return nil, "", err
-	}
-
+func (d *DestinationService) generateClientBySubdomainLabel(ctx context.Context, subdomainLabel *model.Label) (*Client, error) {
 	regionLabel, err := d.getRegionLabel(ctx, *subdomainLabel.Tenant)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	subdomain := subdomainLabel.Value.(string)
@@ -112,21 +107,26 @@ func (d *DestinationService) getSubdomainLabelTenantAndClient(ctx context.Contex
 	instanceConfig, ok := d.DestinationsConfig.RegionToInstanceConfig[region]
 	if !ok {
 		log.C(ctx).Errorf("No destination instance credentials found for region '%s'", region)
-		return nil, "", errors.New(fmt.Sprintf("No destination instance credentials found for region '%s'", region))
+		return nil, errors.New(fmt.Sprintf("No destination instance credentials found for region '%s'", region))
 	}
 
 	client, err := NewClient(instanceConfig, d.APIConfig, d.DestinationsConfig.OauthTokenPath, subdomain)
 	if err != nil {
 		log.C(ctx).WithError(err).Error("Failed to create Destination API client")
-		return nil, "", err
+		return nil, err
 	}
 
-	return client, *subdomainLabel.Tenant, nil
+	return client, nil
 }
 
 // SyncTenantDestinations syncs destinations for a given tenant
 func (d *DestinationService) SyncTenantDestinations(ctx context.Context, tenantID string) error {
-	client, subdomainLabelTenant, err := d.getSubdomainLabelTenantAndClient(ctx, tenantID)
+	subdomainLabel, err := d.getSubscribedSubdomainLabel(ctx, tenantID)
+	if err != nil {
+		return err
+	}
+
+	client, err := d.generateClientBySubdomainLabel(ctx, subdomainLabel)
 	if err != nil {
 		return err
 	}
@@ -134,14 +134,14 @@ func (d *DestinationService) SyncTenantDestinations(ctx context.Context, tenantI
 	revision := d.UUIDSvc.Generate()
 	err = d.walkthroughPages(ctx, client, func(destinations []model.DestinationInput) error {
 		log.C(ctx).Infof("Found %d destinations in tenant '%s'", len(destinations), tenantID)
-		return d.mapDestinationsToTenant(ctx, subdomainLabelTenant, revision, destinations)
+		return d.mapDestinationsToTenant(ctx, *subdomainLabel.Tenant, revision, destinations)
 	})
 	if err != nil {
 		log.C(ctx).WithError(err).Errorf("Failed to sync destinations for tenant '%s'", tenantID)
 		return err
 	}
 
-	if err := d.deleteMissingDestinations(ctx, revision, subdomainLabelTenant); err != nil {
+	if err := d.deleteMissingDestinations(ctx, revision, *subdomainLabel.Tenant); err != nil {
 		log.C(ctx).WithError(err).Errorf("Failed to delete missing destinations for tenant '%s'", tenantID)
 		return err
 	}
@@ -173,7 +173,7 @@ func (d *DestinationService) transaction(ctx context.Context, dbCalls func() err
 
 func (d *DestinationService) deleteMissingDestinations(ctx context.Context, revision, tenant string) error {
 	return d.transaction(ctx, func() error {
-		if err := d.Repo.Delete(ctx, revision, tenant); err != nil {
+		if err := d.Repo.DeleteOld(ctx, revision, tenant); err != nil {
 			log.C(ctx).WithError(err).Errorf("Failed to delete removed destinations for tenant '%s'", tenant)
 		}
 
@@ -187,14 +187,14 @@ func (d *DestinationService) mapDestinationsToTenant(ctx context.Context, tenant
 			correlationID := correlationIDPrefix + destination.CommunicationScenarioID
 			bundles, err := d.BundleRepo.GetBySystemAndCorrelationID(ctx, tenant, destination.XFSystemName, destination.URL, correlationID)
 
-			if len(bundles) == 0 {
-				log.C(ctx).Infof("No bundles found for system '%s', url '%s', correlation id '%s'", destination.XFSystemName, destination.URL, correlationID)
-				continue
-			}
-
 			if err != nil {
 				log.C(ctx).WithError(err).Errorf("Failed to fetch bundle for system '%s', url '%s', correlation id '%s', tenant id '%s'",
 					destination.XFSystemName, destination.URL, correlationID, tenant)
+				continue
+			}
+
+			if len(bundles) == 0 {
+				log.C(ctx).Infof("No bundles found for system '%s', url '%s', correlation id '%s'", destination.XFSystemName, destination.URL, correlationID)
 				continue
 			}
 
@@ -236,7 +236,12 @@ func (d *DestinationService) walkthroughPages(ctx context.Context, client *Clien
 
 // FetchDestinationsSensitiveData returns sensitive data of destinations for a given tenant
 func (d *DestinationService) FetchDestinationsSensitiveData(ctx context.Context, tenantID string, destinationNames []string) ([]byte, error) {
-	client, _, err := d.getSubdomainLabelTenantAndClient(ctx, tenantID)
+	subdomainLabel, err := d.getSubscribedSubdomainLabel(ctx, tenantID)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := d.generateClientBySubdomainLabel(ctx, subdomainLabel)
 	if err != nil {
 		return nil, err
 	}
@@ -291,7 +296,7 @@ func fetchDestination(ctx context.Context, dest string, weighted *semaphore.Weig
 }
 
 func (d *DestinationService) getSubscribedSubdomainLabel(ctx context.Context, tenantID string) (*model.Label, error) {
-	var label *model.Label = nil
+	var label *model.Label
 	transactionErr := d.transaction(ctx, func() error {
 		var err error
 		label, err = d.LabelRepo.GetSubdomainLabelForSubscribedRuntime(ctx, tenantID)
@@ -310,7 +315,7 @@ func (d *DestinationService) getSubscribedSubdomainLabel(ctx context.Context, te
 }
 
 func (d *DestinationService) getRegionLabel(ctx context.Context, tenantID string) (*model.Label, error) {
-	var region *model.Label = nil
+	var region *model.Label
 
 	transactionErr := d.transaction(ctx, func() error {
 		var err error
