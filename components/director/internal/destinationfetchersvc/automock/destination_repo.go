@@ -15,13 +15,13 @@ type DestinationRepo struct {
 	mock.Mock
 }
 
-// Delete provides a mock function with given fields: ctx, revision
-func (_m *DestinationRepo) Delete(ctx context.Context, revision string) error {
-	ret := _m.Called(ctx, revision)
+// DeleteOld provides a mock function with given fields: ctx, latestRevision, tenantID
+func (_m *DestinationRepo) DeleteOld(ctx context.Context, latestRevision string, tenantID string) error {
+	ret := _m.Called(ctx, latestRevision, tenantID)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, revision)
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) error); ok {
+		r0 = rf(ctx, latestRevision, tenantID)
 	} else {
 		r0 = ret.Error(0)
 	}
