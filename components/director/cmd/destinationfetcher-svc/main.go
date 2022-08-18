@@ -75,8 +75,8 @@ type securityConfig struct {
 	JWKSSyncPeriod                 time.Duration `envconfig:"default=5m"`
 	AllowJWTSigningNone            bool          `envconfig:"APP_ALLOW_JWT_SIGNING_NONE,default=false"`
 	JwksEndpoint                   string        `envconfig:"APP_JWKS_ENDPOINT,default=file://hack/default-jwks.json"`
-	DestinationsOnDemandScope      string        `envconfig:"APP_DESTINATIONS_SYNC_SCOPE,default=destinations_sync"`
-	DestinationsSensitiveDataScope string        `envconfig:"APP_DESTINATIONS_SENSITIVE_DATA_SCOPE,default=destinations_sensitive_data"`
+	DestinationsOnDemandScope      string        `envconfig:"APP_DESTINATIONS_SYNC_SCOPE,default=destinations:sync"`
+	DestinationsSensitiveDataScope string        `envconfig:"APP_DESTINATIONS_SENSITIVE_DATA_SCOPE,default=destinations_sensitive_data:read"`
 }
 
 func main() {
