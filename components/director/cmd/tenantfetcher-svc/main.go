@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tidwall/gjson"
+
 	"github.com/gorilla/mux"
 
 	auth "github.com/kyma-incubator/compass/components/director/internal/authenticator"
@@ -424,7 +426,8 @@ func dependenciesConfigToMap(cfg tenantfetcher.HandlerConfig) (map[string][]tena
 
 	for region, dependencies := range config {
 		for _, dependency := range dependencies.Array() {
-			dependenciesConfig[region] = append(dependenciesConfig[region], tenantfetcher.Dependency{Xsappname: dependency.String()})
+			xsappName := gjson.Get(dependency.String(), cfg.XsAppNamePathParam)
+			dependenciesConfig[region] = append(dependenciesConfig[region], tenantfetcher.Dependency{Xsappname: xsappName.String()})
 		}
 	}
 
