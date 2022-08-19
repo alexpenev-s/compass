@@ -19,6 +19,8 @@ CREATE TABLE destinations
         ON DELETE CASCADE
 );
 
+ALTER TABLE destinations
+    ADD CONSTRAINT destinations_tenant_name_uniqueness UNIQUE(name, tenant_id);
 
 CREATE OR REPLACE VIEW tenants_destinations(tenant_id, id, name, type, url, authentication, bundle_id, revision, sensitive_data) AS
 SELECT DISTINCT dst.tenant_id,

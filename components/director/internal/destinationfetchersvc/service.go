@@ -19,6 +19,7 @@ import (
 
 const (
 	correlationIDPrefix = "sap.s4:communicationScenario:"
+	s4HANAType          = "SAP S/4HANA Cloud"
 	regionLabelKey      = "region"
 )
 
@@ -45,7 +46,7 @@ type LabelRepo interface {
 //go:generate mockery --name=BundleRepo --output=automock --outpkg=automock --case=underscore --disable-version-string
 // BundleRepo missing godoc
 type BundleRepo interface {
-	GetBySystemAndCorrelationID(ctx context.Context, tenantID, systemName, systemURL, correlationID string) ([]*model.Bundle, error)
+	GetByDestination(ctx context.Context, tenantID string, destination model.DestinationInput) ([]*model.Bundle, error)
 }
 
 //go:generate mockery --name=TenantRepo --output=automock --outpkg=automock --case=underscore --disable-version-string
@@ -82,11 +83,11 @@ func (d *DestinationService) GetSubscribedTenantIDs(ctx context.Context) ([]stri
 
 func (d *DestinationService) getSubscribedTenants(ctx context.Context) ([]*model.BusinessTenantMapping, error) {
 	var tenants []*model.BusinessTenantMapping
-	transactionError := d.transaction(ctx, func() error {
+	transactionError := d.transaction(ctx, func(ctxWithTransact context.Context) error {
 		var err error
-		tenants, err = d.TenantRepo.GetBySubscribedRuntimes(ctx)
+		tenants, err = d.TenantRepo.GetBySubscribedRuntimes(ctxWithTransact)
 		if err != nil {
-			log.C(ctx).WithError(err).Error("An error occurred while getting subscribed tenants")
+			log.C(ctxWithTransact).WithError(err).Error("An error occurred while getting subscribed tenants")
 			return err
 		}
 		return nil
@@ -132,7 +133,7 @@ func (d *DestinationService) SyncTenantDestinations(ctx context.Context, tenantI
 	}
 
 	revision := d.UUIDSvc.Generate()
-	err = d.walkthroughPages(ctx, client, func(destinations []model.DestinationInput) error {
+	err = d.walkthroughPages(ctx, client, func(destinations []destinationFromService) error {
 		log.C(ctx).Infof("Found %d destinations in tenant '%s'", len(destinations), tenantID)
 		return d.mapDestinationsToTenant(ctx, *subdomainLabel.Tenant, revision, destinations)
 	})
@@ -149,7 +150,7 @@ func (d *DestinationService) SyncTenantDestinations(ctx context.Context, tenantI
 	return nil
 }
 
-func (d *DestinationService) transaction(ctx context.Context, dbCalls func() error) error {
+func (d *DestinationService) transaction(ctx context.Context, dbCalls func(ctxWithTransact context.Context) error) error {
 	tx, err := d.Transactioner.Begin()
 	if err != nil {
 		log.C(ctx).WithError(err).Error("Failed to begin db transaction")
@@ -158,7 +159,7 @@ func (d *DestinationService) transaction(ctx context.Context, dbCalls func() err
 	ctx = persistence.SaveToContext(ctx, tx)
 	defer d.Transactioner.RollbackUnlessCommitted(ctx, tx)
 
-	if err := dbCalls(); err != nil {
+	if err := dbCalls(ctx); err != nil {
 		log.C(ctx).WithError(err).Error("Failed to execute database calls")
 		return err
 	}
@@ -172,39 +173,51 @@ func (d *DestinationService) transaction(ctx context.Context, dbCalls func() err
 }
 
 func (d *DestinationService) deleteMissingDestinations(ctx context.Context, revision, tenant string) error {
-	return d.transaction(ctx, func() error {
-		if err := d.Repo.DeleteOld(ctx, revision, tenant); err != nil {
-			log.C(ctx).WithError(err).Errorf("Failed to delete removed destinations for tenant '%s'", tenant)
+	return d.transaction(ctx, func(ctxWithTransact context.Context) error {
+		if err := d.Repo.DeleteOld(ctxWithTransact, revision, tenant); err != nil {
+			log.C(ctxWithTransact).WithError(err).Errorf("Failed to delete removed destinations for tenant '%s'", tenant)
 		}
 
 		return nil
 	})
 }
 
-func (d *DestinationService) mapDestinationsToTenant(ctx context.Context, tenant, revision string, destinations []model.DestinationInput) error {
-	return d.transaction(ctx, func() error {
-		for _, destination := range destinations {
-			correlationID := correlationIDPrefix + destination.CommunicationScenarioID
-			bundles, err := d.BundleRepo.GetBySystemAndCorrelationID(ctx, tenant, destination.XFSystemName, destination.URL, correlationID)
+func (d *DestinationService) mapDestinationsToTenant(ctx context.Context, tenant, revision string, destinations []destinationFromService) error {
+	return d.transaction(ctx, func(ctxWithTransact context.Context) error {
+		for _, destinationFromService := range destinations {
+			destination, err := destinationFromService.ToModel()
+			if err != nil {
+				// Log on info as there could be many destinations that should not be gathered
+				log.C(ctxWithTransact).WithError(err).Infof("Destination '%s' from tenant with id '%s' could not be processed",
+					destinationFromService.Name, tenant)
+				continue
+			}
+			bundles, err := d.BundleRepo.GetByDestination(ctxWithTransact, tenant, destination)
 
 			if err != nil {
-				log.C(ctx).WithError(err).Errorf("Failed to fetch bundle for system '%s', url '%s', correlation id '%s', tenant id '%s'",
-					destination.XFSystemName, destination.URL, correlationID, tenant)
+				log.C(ctxWithTransact).WithError(err).Errorf(
+					"Failed to fetch bundle for system '%s', url '%s', correlation id '%s', tenant id '%s'",
+					destination.XSystemTenantName, destination.URL, destination.XCorrelationID, tenant)
+				return err
+			}
+
+			bundlesCount := len(bundles)
+			if bundlesCount == 0 {
+				log.C(ctxWithTransact).Infof("No bundles found for system '%s', url '%s', correlation id '%s'",
+					destination.XSystemTenantName, destination.URL, destination.XCorrelationID)
 				continue
 			}
 
-			if len(bundles) == 0 {
-				log.C(ctx).Infof("No bundles found for system '%s', url '%s', correlation id '%s'", destination.XFSystemName, destination.URL, correlationID)
-				continue
-			}
+			log.C(ctxWithTransact).Infof("Found %d bundles for system '%s', url '%s', correlation id '%s'",
+				bundlesCount, destination.XSystemTenantName, destination.URL, destination.XCorrelationID)
 
 			for _, bundle := range bundles {
 				id := d.UUIDSvc.Generate()
-				if err := d.Repo.Upsert(ctx, destination, id, tenant, bundle.ID, revision); err != nil {
-					log.C(ctx).WithError(err).Errorf(
-						"Failed to insert destination with name '%s' for bunlde '%s' and tenant '%s' to DB",
+				if err := d.Repo.Upsert(ctxWithTransact, destination, id, tenant, bundle.ID, revision); err != nil {
+					log.C(ctxWithTransact).WithError(err).Errorf(
+						"Failed to insert destination with name '%s' for bundle '%s' and tenant '%s' to DB",
 						destination.Name, bundle.ID, tenant)
-					continue
+					return err
 				}
 			}
 		}
@@ -212,7 +225,7 @@ func (d *DestinationService) mapDestinationsToTenant(ctx context.Context, tenant
 	})
 }
 
-type processFunc func([]model.DestinationInput) error
+type processFunc func([]destinationFromService) error
 
 func (d *DestinationService) walkthroughPages(ctx context.Context, client *Client, process processFunc) error {
 	hasMorePages := true
@@ -297,15 +310,15 @@ func fetchDestination(ctx context.Context, dest string, weighted *semaphore.Weig
 
 func (d *DestinationService) getSubscribedSubdomainLabel(ctx context.Context, tenantID string) (*model.Label, error) {
 	var label *model.Label
-	transactionErr := d.transaction(ctx, func() error {
+	transactionErr := d.transaction(ctx, func(ctxWithTransact context.Context) error {
 		var err error
-		label, err = d.LabelRepo.GetSubdomainLabelForSubscribedRuntime(ctx, tenantID)
+		label, err = d.LabelRepo.GetSubdomainLabelForSubscribedRuntime(ctxWithTransact, tenantID)
 		if err != nil {
 			if apperrors.IsNotFoundError(err) {
-				log.C(ctx).Errorf("No subscribed subdomain found for tenant '%s'", tenantID)
+				log.C(ctxWithTransact).Errorf("No subscribed subdomain found for tenant '%s'", tenantID)
 				return apperrors.NewNotFoundErrorWithMessage(resource.Label, tenantID, fmt.Sprintf("tenant %s not found", tenantID))
 			}
-			log.C(ctx).WithError(err).Errorf("Failed to get subdomain for tenant '%s' from db", tenantID)
+			log.C(ctxWithTransact).WithError(err).Errorf("Failed to get subdomain for tenant '%s' from db", tenantID)
 			return err
 		}
 		return nil
@@ -317,11 +330,11 @@ func (d *DestinationService) getSubscribedSubdomainLabel(ctx context.Context, te
 func (d *DestinationService) getRegionLabel(ctx context.Context, tenantID string) (*model.Label, error) {
 	var region *model.Label
 
-	transactionErr := d.transaction(ctx, func() error {
+	transactionErr := d.transaction(ctx, func(ctxWithTransact context.Context) error {
 		var err error
-		region, err = d.LabelRepo.GetByKey(ctx, tenantID, model.TenantLabelableObject, tenantID, regionLabelKey)
+		region, err = d.LabelRepo.GetByKey(ctxWithTransact, tenantID, model.TenantLabelableObject, tenantID, regionLabelKey)
 		if err != nil {
-			log.C(ctx).WithError(err).Errorf("Failed to fetch region for tenant '%s'", tenantID)
+			log.C(ctxWithTransact).WithError(err).Errorf("Failed to fetch region for tenant '%s'", tenantID)
 			return err
 		}
 

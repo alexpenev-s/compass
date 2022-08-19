@@ -58,7 +58,7 @@ func (h *handler) SyncTenantDestinations(writer http.ResponseWriter, request *ht
 			http.Error(writer, err.Error(), http.StatusBadRequest)
 			return
 		}
-		http.Error(writer, fmt.Sprintf("Failed to fetch destinations for tenant %s",
+		http.Error(writer, fmt.Sprintf("Failed to sync destinations for tenant %s",
 			tenantID), http.StatusInternalServerError)
 		return
 	}

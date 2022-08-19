@@ -2,8 +2,6 @@ package bundle
 
 import (
 	"context"
-	"fmt"
-
 	"github.com/kyma-incubator/compass/components/director/pkg/pagination"
 	"github.com/kyma-incubator/compass/components/director/pkg/persistence"
 
@@ -210,16 +208,8 @@ func (r *pgRepository) ListByApplicationIDNoPaging(ctx context.Context, tenantID
 	return bundles, nil
 }
 
-func (r *pgRepository) GetBySystemAndCorrelationID(ctx context.Context, tenantID, systemName, systemURL, correlationID string) ([]*model.Bundle, error) {
-	bundleCollection := BundleCollection{}
-
-	persist, err := persistence.FromCtx(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	query := fmt.Sprintf(`
-	SELECT id
+const (
+	queryByNameAndURL = `SELECT id
 	FROM bundles
 	WHERE app_id IN (
 		SELECT id
@@ -227,14 +217,43 @@ func (r *pgRepository) GetBySystemAndCorrelationID(ctx context.Context, tenantID
 		WHERE id IN (
 			SELECT id
 			FROM tenant_applications
-			WHERE tenant_id=(SELECT parent FROM business_tenant_mappings WHERE id='%s')
+			WHERE tenant_id=(SELECT parent FROM business_tenant_mappings WHERE id = $1 )
 		)
-		AND name='%s'
-		AND base_url='%s'
+		AND name = $2 AND base_url = $3
 	)
-	AND correlation_ids::jsonb ? '%s'`, tenantID, systemName, systemURL, correlationID)
+	AND correlation_ids::jsonb ? $4`
 
-	err = persist.SelectContext(ctx, &bundleCollection, query)
+	queryByTenantIDAndSystemType = `SELECT id
+	FROM bundles
+	WHERE app_id IN (
+		SELECT DISTINCT pa.id as id
+		FROM public.applications pa JOIN labels l ON pa.id=l.app_id
+		WHERE pa.id IN (
+			SELECT id
+			FROM tenant_applications
+			WHERE tenant_id=(SELECT parent FROM business_tenant_mappings WHERE id = $1 )
+		)
+		AND l.key='applicationType'
+		AND l.value::jsonb ? $2
+		AND pa.local_tenant_id = $3
+	)
+	AND correlation_ids::jsonb ? $4`
+)
+
+func (r *pgRepository) GetByDestination(ctx context.Context, tenantID string, dest model.DestinationInput) ([]*model.Bundle, error) {
+	bundleCollection := BundleCollection{}
+
+	persist, err := persistence.FromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if dest.XSystemTenantID == "" {
+		err = persist.SelectContext(ctx, &bundleCollection, queryByNameAndURL,
+			tenantID, dest.XSystemTenantName, dest.URL, dest.XCorrelationID)
+	} else {
+		err = persist.SelectContext(ctx, &bundleCollection, queryByTenantIDAndSystemType,
+			tenantID, dest.XSystemType, dest.XSystemTenantID, dest.XCorrelationID)
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch bundles from DB")
 	}

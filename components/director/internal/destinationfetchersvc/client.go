@@ -45,9 +45,62 @@ type Client struct {
 	apiURL     string
 }
 
+// destinationFromService destination received from destination service
+type destinationFromService struct {
+	Name                    string `json:"Name"`
+	Type                    string `json:"Type"`
+	URL                     string `json:"URL"`
+	Authentication          string `json:"Authentication"`
+	XFSystemName            string `json:"XFSystemName"`
+	CommunicationScenarioID string `json:"communicationScenarioId"`
+	ProductName             string `json:"product.name"`
+	XCorrelationID          string `json:"x-correlation-id"`
+	XSystemTenantID         string `json:"x-system-id"`
+	XSystemTenantName       string `json:"x-system-name"`
+	XSystemType             string `json:"x-system-type"`
+}
+
+// ToModel missing godoc
+func (d *destinationFromService) ToModel() (model.DestinationInput, error) {
+	result := model.DestinationInput{
+		Name:              d.Name,
+		Type:              d.Type,
+		URL:               d.URL,
+		Authentication:    d.Authentication,
+		XCorrelationID:    d.XCorrelationID,
+		XSystemTenantID:   d.XSystemTenantID,
+		XSystemTenantName: d.XSystemTenantName,
+		XSystemType:       d.XSystemType,
+	}
+
+	// Set values from custom properties
+	if result.XSystemType == "" {
+		result.XSystemType = d.ProductName
+	}
+	if result.XSystemType == "" {
+		return model.DestinationInput{}, errors.New("system type not found in destination")
+	}
+	if result.XCorrelationID == "" {
+		if result.XSystemType == s4HANAType && d.CommunicationScenarioID != "" {
+			result.XCorrelationID = correlationIDPrefix + d.CommunicationScenarioID
+		}
+	}
+	if result.XCorrelationID == "" {
+		return model.DestinationInput{}, errors.New("no correlation id found in destination")
+	}
+	if result.XSystemTenantName == "" {
+		result.XSystemTenantName = d.XFSystemName
+	}
+
+	if result.XSystemTenantID == "" && (result.XSystemTenantName == "" || result.URL == "") {
+		return model.DestinationInput{}, errors.New("system tenant could not be determined by destination")
+	}
+	return result, nil
+}
+
 // DestinationResponse paged response from destination service
 type DestinationResponse struct {
-	destinations []model.DestinationInput
+	destinations []destinationFromService
 	pageCount    string
 }
 
@@ -120,7 +173,7 @@ func (c *Client) FetchTenantDestinationsPage(ctx context.Context, page string) (
 		return nil, errors.Errorf("received status code %d when trying to fetch destinations", res.StatusCode)
 	}
 
-	var destinations []model.DestinationInput
+	var destinations []destinationFromService
 	if err := json.NewDecoder(res.Body).Decode(&destinations); err != nil {
 		return nil, errors.Wrap(err, "failed to decode response body")
 	}

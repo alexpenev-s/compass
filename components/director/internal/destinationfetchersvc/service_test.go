@@ -67,14 +67,15 @@ func TestService_SyncTenantDestinations(t *testing.T) {
 			UUIDService: successfulUUIDService,
 		},
 		{
-			Name: "When getting bundles fails should continue to process destinations",
+			Name: "When getting bundles fails should stop processing destinations",
 			Transactioner: func() (*persistenceAutomock.PersistenceTx, *persistenceAutomock.Transactioner) {
-				return txGen.ThatSucceedsMultipleTimes(5)
+				return txGen.ThatSucceedsMultipleTimes(3)
 			},
-			LabelRepo:   successfulLabelRegionAndSubdomainRequest,
-			BundleRepo:  failingBundleRepo,
-			DestRepo:    successfulDeleteDestinationRepo,
-			UUIDService: successfulUUIDService,
+			LabelRepo:           successfulLabelRegionAndSubdomainRequest,
+			BundleRepo:          failingBundleRepo,
+			DestRepo:            unusedDestinationsRepo,
+			UUIDService:         successfulUUIDService,
+			ExpectedErrorOutput: testErr.Error(),
 		},
 		{
 			Name: "When no bundles are returned should continue to process destinations",
@@ -87,14 +88,15 @@ func TestService_SyncTenantDestinations(t *testing.T) {
 			UUIDService: successfulUUIDService,
 		},
 		{
-			Name: "When destination upsert or delete fails should continue to process destinations",
+			Name: "When destination upsert or delete fails should stop processing destinations",
 			Transactioner: func() (*persistenceAutomock.PersistenceTx, *persistenceAutomock.Transactioner) {
-				return txGen.ThatSucceedsMultipleTimes(5)
+				return txGen.ThatSucceedsMultipleTimes(3)
 			},
-			LabelRepo:   successfulLabelRegionAndSubdomainRequest,
-			BundleRepo:  successfulBundleRepo("bundleID"),
-			DestRepo:    failingDestinationRepo,
-			UUIDService: successfulUUIDService,
+			LabelRepo:           successfulLabelRegionAndSubdomainRequest,
+			BundleRepo:          successfulBundleRepo("bundleID"),
+			DestRepo:            failingDestinationRepo,
+			UUIDService:         successfulUUIDService,
+			ExpectedErrorOutput: testErr.Error(),
 		},
 		{
 			Name:                "Failed to begin transaction to database",
@@ -410,8 +412,8 @@ func successfulLabelRegionAndSubdomainRequest() *automock.LabelRepo {
 func successfulBundleRepo(bundleID string) func() *automock.BundleRepo {
 	return func() *automock.BundleRepo {
 		bundleRepo := unusedBundleRepo()
-		bundleRepo.On("GetBySystemAndCorrelationID",
-			mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(
+		bundleRepo.On("GetByDestination",
+			mock.Anything, mock.Anything, mock.Anything).Return(
 			[]*model.Bundle{{
 				BaseEntity: &model.BaseEntity{
 					ID: bundleID,
@@ -423,15 +425,15 @@ func successfulBundleRepo(bundleID string) func() *automock.BundleRepo {
 
 func failingBundleRepo() *automock.BundleRepo {
 	bundleRepo := unusedBundleRepo()
-	bundleRepo.On("GetBySystemAndCorrelationID",
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil, testErr)
+	bundleRepo.On("GetByDestination",
+		mock.Anything, mock.Anything, mock.Anything).Return(nil, testErr)
 	return bundleRepo
 }
 
 func bundleRepoWithNoBundles() *automock.BundleRepo {
 	bundleRepo := unusedBundleRepo()
-	bundleRepo.On("GetBySystemAndCorrelationID",
-		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return([]*model.Bundle{}, nil)
+	bundleRepo.On("GetByDestination",
+		mock.Anything, mock.Anything, mock.Anything).Return([]*model.Bundle{}, nil)
 	return bundleRepo
 }
 
@@ -457,8 +459,6 @@ func failingDestinationRepo() *automock.DestinationRepo {
 	destinationRepo := unusedDestinationsRepo()
 	destinationRepo.On("Upsert",
 		mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(testErr)
-	destinationRepo.On("DeleteOld",
-		mock.Anything, UUID, labelTenantID).Return(testErr)
 	return destinationRepo
 }
 

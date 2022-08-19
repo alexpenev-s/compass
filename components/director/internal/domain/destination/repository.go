@@ -16,7 +16,7 @@ const (
 
 var (
 	destinationColumns = []string{"id", "name", "type", "url", "authentication", "tenant_id", "bundle_id", "revision"}
-	conflictingColumns = []string{"tenant_id", "bundle_id"}
+	conflictingColumns = []string{"name", "tenant_id"}
 	updateColumns      = []string{"name", "type", "url", "authentication", "revision"}
 )
 

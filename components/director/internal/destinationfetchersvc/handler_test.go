@@ -80,7 +80,7 @@ func TestHandler_SyncDestinations(t *testing.T) {
 				svc.On("SyncTenantDestinations", mock.Anything, tenantID).Return(err)
 				return svc
 			},
-			ExpectedErrorOutput: fmt.Sprintf("Failed to fetch destinations for tenant %s", tenantID),
+			ExpectedErrorOutput: fmt.Sprintf("Failed to sync destinations for tenant %s", tenantID),
 			ExpectedStatusCode:  http.StatusInternalServerError,
 		},
 	}
