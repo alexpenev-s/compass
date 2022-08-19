@@ -553,15 +553,9 @@ global:
       tokenUrlPath: "url"
       x509CertPath: "certificate"
       x509KeyPath: "key"
-    secretPath: "/etc/instances/config.json"
-    secret:
-      name: "compass-tenant-fetcher-secret"
-      clientIdKey: "client-id"
-      oauthMode: "oauth-mtls"
-      clientCertKey: "client-cert"
-      clientKeyKey: "client-key"
-      oauthUrlKey: "url"
-      skipSSLValidation: true
+    secretName: destination-region-instances
+    secretPath: "/etc/instances/keyConfig"
+    oauthMode: "oauth-mtls"
   tenantFetcher:
     manageSecrets: true
     host: compass-tenant-fetcher.compass-system.svc.cluster.local

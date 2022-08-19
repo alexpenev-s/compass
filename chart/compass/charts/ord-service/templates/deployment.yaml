@@ -96,9 +96,9 @@ spec:
             - name: SUBSCRIPTION_TOKEN_PREFIX
               value: {{ .Values.global.director.subscription.tokenPrefix }}
             - name: DESTINATION_FETCHER_RELOAD_URL
-              value: "http://{{ .Values.global.destinationFetcher.host }}:{{ .Values.global.destinationFetcher.port }}{{ .Values.global.destinationFetcher.server.tenantDestinationsEndpoint }}"
+              value: "https://{{ .Values.global.gateway.tls.secure.internal.host }}.{{ .Values.global.ingress.domainName }}{{ .Values.global.destinationFetcher.prefix }}{{ .Values.global.destinationFetcher.server.tenantDestinationsEndpoint }}"
             - name: DESTINATION_FETCHER_SENSITIVE_DATA_URL
-              value: "http://{{ .Values.global.destinationFetcher.host }}:{{ .Values.global.destinationFetcher.port }}{{ .Values.global.destinationFetcher.server.sensitiveDataEndpoint }}"
+              value: "https://{{ .Values.global.gateway.tls.secure.internal.host }}.{{ .Values.global.ingress.domainName }}{{ .Values.global.destinationFetcher.prefix }}{{ .Values.global.destinationFetcher.server.sensitiveDataEndpoint }}"
           livenessProbe:
             httpGet:
               port: {{.Values.deployment.args.containerPort }}
