@@ -169,7 +169,6 @@ func (d *DestinationService) transaction(ctx context.Context, dbCalls func(ctxWi
 		return err
 	}
 	return nil
-
 }
 
 func (d *DestinationService) deleteMissingDestinations(ctx context.Context, revision, tenant string) error {
@@ -177,7 +176,6 @@ func (d *DestinationService) deleteMissingDestinations(ctx context.Context, revi
 		if err := d.Repo.DeleteOld(ctxWithTransact, revision, tenant); err != nil {
 			log.C(ctxWithTransact).WithError(err).Errorf("Failed to delete removed destinations for tenant '%s'", tenant)
 		}
-
 		return nil
 	})
 }
