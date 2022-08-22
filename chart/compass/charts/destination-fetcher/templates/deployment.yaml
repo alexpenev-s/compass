@@ -54,7 +54,7 @@ spec:
               protocol: TCP
           volumeMounts:
             - name: instances
-              mountPath: "/etc/instances/"
+              mountPath: "{{ .Values.global.destinationFetcher.dependenciesConfig.path }}/{{ .Values.global.destinationFetcher.dependenciesConfig.file }}"
               readOnly: true
           resources:
             {{- toYaml .Values.deployment.resources | nindent 12 }}
@@ -76,17 +76,17 @@ spec:
             - name: APP_DESTINATION_INSTANCE_X509_KEY_PATH
               value: {{ .Values.global.destinationFetcher.instance.x509KeyPath }}
             - name: APP_DESTINATION_SECRET_PATH
-              value: "{{ .Values.global.destinationFetcher.secretPath }}"
+              value: "{{ .Values.global.destinationFetcher.dependenciesConfig.path }}/{{ .Values.global.destinationFetcher.dependenciesConfig.file }}"
             - name: APP_ENDPOINT_GET_TENANT_DESTINATIONS
-              value: "{{ .Values.global.destinationFetcher.server.tenantDestinationsEndpoint }}"
+              value: {{ .Values.global.destinationFetcher.server.tenantDestinationsEndpoint | quote }}
             - name: APP_ENDPOINT_FIND_DESTINATION
-              value: "{{ .Values.global.destinationFetcher.server.sensitiveDataEndpoint }}"
+              value: {{ .Values.global.destinationFetcher.server.sensitiveDataEndpoint | quote }}
             - name: APP_DESTINATION_OAUTH_MODE
               value: {{ .Values.global.destinationFetcher.oauthMode }}
             - name: APP_DESTINATIONS_TIMEOUT
               value: {{ .Values.global.destinationFetcher.request.requestTimeout }}
             - name: APP_DESTINATIONS_PAGE_SIZE
-              value: "{{ .Values.global.destinationFetcher.request.pageSize }}"
+              value: {{ .Values.global.destinationFetcher.request.pageSize | quote }}
             - name: APP_DESTINATIONS_PAGE_PARAM
               value: {{ .Values.global.destinationFetcher.request.pageParam }}
             - name: APP_DESTINATIONS_PAGE_SIZE_PARAM
@@ -98,11 +98,11 @@ spec:
             - name: APP_DESTINATION_OAUTH_TOKEN_PATH
               value: {{ .Values.global.destinationFetcher.request.oauthTokenPath }}
             - name: APP_DESTINATIONS_SENSITIVE_GOROUTINE_LIMIT
-              value: "{{ .Values.global.destinationFetcher.request.goroutineLimit }}"
+              value: {{ .Values.global.destinationFetcher.request.goroutineLimit | quote }}
             - name: APP_DESTINATIONS_RETRY_INTERVAL
               value: {{ .Values.global.destinationFetcher.request.retry_interval }}
             - name: APP_DESTINATIONS_RETRY_ATTEMPTS
-              value: "{{ .Values.global.destinationFetcher.request.retry_attempts }}"
+              value: {{ .Values.global.destinationFetcher.request.retry_attempts | quote }}
             - name: APP_DEFAULT_SCENARIO_ENABLED
               value: {{ .Values.global.enableCompassDefaultScenarioAssignment | quote }}
             - name: APP_LOG_FORMAT
@@ -110,9 +110,9 @@ spec:
             - name: APP_ADDRESS
               value: "0.0.0.0:{{ .Values.deployment.args.containerPort }}"
             - name: APP_ROOT_API
-              value: "{{ .Values.global.destinationFetcher.prefix }}"
+              value: {{ .Values.global.destinationFetcher.prefix | quote }}
             - name: APP_JWKS_ENDPOINT
-              value: "{{ .Values.global.destinationFetcher.authentication.jwksEndpoint }}"
+              value: {{ .Values.global.destinationFetcher.authentication.jwksEndpoint | quote }}
             - name: APP_DESTINATIONS_SYNC_SCOPE
               value: {{ .Values.global.destinationFetcher.authentication.appDestinationsSyncScope | quote }}
             - name: APP_DESTINATIONS_SENSITIVE_DATA_SCOPE
@@ -122,11 +122,11 @@ spec:
             - name: APP_DESTINATIONS_SENSITIVE_DATA_ENDPOINT
               value: {{ .Values.global.destinationFetcher.server.sensitiveDataEndpoint | quote }}
             - name: APP_DESTINATION_FETCHER_SCHEDULE
-              value: "{{ .Values.global.destinationFetcher.jobSchedule }}"
+              value: {{ .Values.global.destinationFetcher.jobSchedule | quote }}
             - name: APP_ELECTION_LEASE_LOCK_NAME
               value: {{ .Values.global.destinationFetcher.lease.lockname | quote }}
             - name: APP_DESTINATION_FETCHER_PARALLEL_TENANTS
-              value: "{{ .Values.global.destinationFetcher.parallelTenants }}"
+              value: {{ .Values.global.destinationFetcher.parallelTenants | quote }}
             - name: APP_ELECTION_LEASE_LOCK_NAMESPACE
               value: {{ .Release.Namespace }}
             - name: APP_DB_USER
@@ -197,4 +197,4 @@ spec:
       volumes:
         - name: instances
           secret:
-            secretName: {{ .Values.global.destinationFetcher.secretName }}
+            secretName: {{ .Values.global.destinationFetcher.dependenciesConfig.secretName }}

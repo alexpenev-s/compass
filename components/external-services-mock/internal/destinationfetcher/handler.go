@@ -15,7 +15,7 @@ func NewHandler() *Handler {
 func (h *Handler) GetSensitiveData(writer http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	destinationName := mux.Vars(req)["name"]
-	log.C(ctx).Infof("Sending sensitive data for destination: %s", destinationName)
+	log.C(ctx).Infof("Sending sensitive data of destination: %s", destinationName)
 	data, ok := destinationsSensitiveData[destinationName]
 
 	if !ok {
@@ -24,7 +24,7 @@ func (h *Handler) GetSensitiveData(writer http.ResponseWriter, req *http.Request
 	}
 
 	if _, err := writer.Write(data); err != nil {
-		log.C(ctx).Errorf("Failed to respond with error %s", err.Error())
+		log.C(ctx).WithError(err).Errorf("Failed to write data")
 	}
 }
 

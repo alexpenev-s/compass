@@ -545,7 +545,6 @@ global:
       pageCountParam: "\\$pageCount"
       pageCountHeader: "Page-Count"
       oauthTokenPath: "/oauth/token"
-    containerName: "destination-fetcher"
     instance:
       clientIdPath: "clientid"
       clientSecretPath: "clientsecret"
@@ -553,8 +552,10 @@ global:
       tokenUrlPath: "url"
       x509CertPath: "certificate"
       x509KeyPath: "key"
-    secretName: destination-region-instances
-    secretPath: "/etc/instances/keyConfig"
+    dependenciesConfig:
+      secretName: "destination-region-instances"
+      file: "keyConfig"
+      path: "/config/dependencies"
     oauthMode: "oauth-mtls"
   tenantFetcher:
     manageSecrets: true
@@ -882,7 +883,6 @@ global:
     ordServiceFQDN: http://compass-ord-service.compass-system.svc.cluster.local
     systemBrokerFQDN: http://compass-system-broker.compass-system.svc.cluster.local
     tenantFetcherFQDN: http://compass-tenant-fetcher.compass-system.svc.cluster.local
-    destinationFetcherFQDN: http://compass-destination-fetcher.compass-system.svc.cluster.local
     hydratorFQDN: http://compass-hydrator.compass-system.svc.cluster.local
     basicCredentials:
       manage: false

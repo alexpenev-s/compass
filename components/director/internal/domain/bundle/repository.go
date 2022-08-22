@@ -223,7 +223,7 @@ const (
 	)
 	AND correlation_ids::jsonb ? $4`
 
-	queryByTenantIDAndSystemType = `SELECT id
+	queryBySystemIDAndSystemType = `SELECT id
 	FROM bundles
 	WHERE app_id IN (
 		SELECT DISTINCT pa.id as id
@@ -251,7 +251,7 @@ func (r *pgRepository) GetByDestination(ctx context.Context, tenantID string, de
 		err = persist.SelectContext(ctx, &bundleCollection, queryByNameAndURL,
 			tenantID, dest.XSystemTenantName, dest.URL, dest.XCorrelationID)
 	} else {
-		err = persist.SelectContext(ctx, &bundleCollection, queryByTenantIDAndSystemType,
+		err = persist.SelectContext(ctx, &bundleCollection, queryBySystemIDAndSystemType,
 			tenantID, dest.XSystemType, dest.XSystemTenantID, dest.XCorrelationID)
 	}
 	if err != nil {

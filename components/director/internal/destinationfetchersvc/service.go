@@ -290,18 +290,18 @@ func (d *DestinationService) FetchDestinationsSensitiveData(ctx context.Context,
 	return append([]byte(`{ "destinations": {`), combinedInfoJSON...), nil
 }
 
-func fetchDestination(ctx context.Context, dest string, weighted *semaphore.Weighted,
+func fetchDestination(ctx context.Context, destinationName string, weighted *semaphore.Weighted,
 	client *Client, resChan chan []byte, errChan chan error) {
-	log.C(ctx).Infof("Fetching data for destination: %s \n", dest)
+	log.C(ctx).Infof("Fetching data for destination: %s \n", destinationName)
 	defer weighted.Release(1)
-	result, err := client.FetchDestinationSensitiveData(ctx, dest)
+	result, err := client.FetchDestinationSensitiveData(ctx, destinationName)
 	if err != nil {
-		log.C(ctx).WithError(err).Errorf("Failed to fetch data for destination %s", dest)
+		log.C(ctx).WithError(err).Errorf("Failed to fetch data for destination %s", destinationName)
 		errChan <- err
 		return
 	}
 
-	result = append([]byte("\""+dest+"\":"), result...)
+	result = append([]byte("\""+destinationName+"\":"), result...)
 
 	resChan <- result
 }
