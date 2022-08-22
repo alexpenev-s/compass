@@ -167,7 +167,11 @@ func (c *Client) FetchTenantDestinationsPage(ctx context.Context, page string) (
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			log.C(ctx).WithError(err).Error("Unable to close response body")
+		}
+	}()
 
 	if res.StatusCode != http.StatusOK {
 		return nil, errors.Errorf("received status code %d when trying to fetch destinations", res.StatusCode)
@@ -249,7 +253,11 @@ func (c *Client) sendRequestWithRetry(req *http.Request) (*http.Response, error)
 			return nil
 		}
 
-		defer res.Body.Close()
+		defer func() {
+			if err := res.Body.Close(); err != nil {
+				log.C(req.Context()).WithError(err).Error("Unable to close response body")
+			}
+		}()
 		body, err := ioutil.ReadAll(res.Body)
 
 		if err != nil {
@@ -258,8 +266,5 @@ func (c *Client) sendRequestWithRetry(req *http.Request) (*http.Response, error)
 		return errors.Errorf("request failed with status code %d, error message: %v", res.StatusCode, string(body))
 	}, retry.Attempts(c.apiConfig.RetryAttempts), retry.Delay(c.apiConfig.RetryInterval))
 
-	if err != nil {
-		return nil, err
-	}
-	return response, nil
+	return response, err
 }

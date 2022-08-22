@@ -209,7 +209,7 @@ func (r *pgRepository) ListByApplicationIDNoPaging(ctx context.Context, tenantID
 }
 
 const (
-	queryByNameAndURL = `SELECT id
+	QueryByNameAndURL = `SELECT id
 	FROM bundles
 	WHERE app_id IN (
 		SELECT id
@@ -223,7 +223,7 @@ const (
 	)
 	AND correlation_ids::jsonb ? $4`
 
-	queryByTenantIDAndSystemType = `SELECT id
+	QueryBySystemIDAndSystemType = `SELECT id
 	FROM bundles
 	WHERE app_id IN (
 		SELECT DISTINCT pa.id as id
@@ -240,7 +240,7 @@ const (
 	AND correlation_ids::jsonb ? $4`
 )
 
-func (r *pgRepository) GetByDestination(ctx context.Context, tenantID string, dest model.DestinationInput) ([]*model.Bundle, error) {
+func (r *pgRepository) ListByDestination(ctx context.Context, tenantID string, dest model.DestinationInput) ([]*model.Bundle, error) {
 	bundleCollection := BundleCollection{}
 
 	persist, err := persistence.FromCtx(ctx)
@@ -248,21 +248,22 @@ func (r *pgRepository) GetByDestination(ctx context.Context, tenantID string, de
 		return nil, err
 	}
 	if dest.XSystemTenantID == "" {
-		err = persist.SelectContext(ctx, &bundleCollection, queryByNameAndURL,
+		err = persist.SelectContext(ctx, &bundleCollection, QueryByNameAndURL,
 			tenantID, dest.XSystemTenantName, dest.URL, dest.XCorrelationID)
 	} else {
-		err = persist.SelectContext(ctx, &bundleCollection, queryByTenantIDAndSystemType,
+		err = persist.SelectContext(ctx, &bundleCollection, QueryBySystemIDAndSystemType,
 			tenantID, dest.XSystemType, dest.XSystemTenantID, dest.XCorrelationID)
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to fetch bundles from DB")
+		return nil, persistence.MapSQLError(
+			ctx, err, resource.Bundle, resource.List, "failed to fetch bundles for destination")
 	}
 
 	bundles := make([]*model.Bundle, 0, bundleCollection.Len())
 	for _, bundle := range bundleCollection {
 		bundleModel, err := r.conv.FromEntity(&bundle)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "while creating Bundle model from entity")
 		}
 		bundles = append(bundles, bundleModel)
 	}

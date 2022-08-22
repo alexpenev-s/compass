@@ -412,7 +412,7 @@ func successfulLabelRegionAndSubdomainRequest() *automock.LabelRepo {
 func successfulBundleRepo(bundleID string) func() *automock.BundleRepo {
 	return func() *automock.BundleRepo {
 		bundleRepo := unusedBundleRepo()
-		bundleRepo.On("GetByDestination",
+		bundleRepo.On("ListByDestination",
 			mock.Anything, mock.Anything, mock.Anything).Return(
 			[]*model.Bundle{{
 				BaseEntity: &model.BaseEntity{
@@ -425,14 +425,14 @@ func successfulBundleRepo(bundleID string) func() *automock.BundleRepo {
 
 func failingBundleRepo() *automock.BundleRepo {
 	bundleRepo := unusedBundleRepo()
-	bundleRepo.On("GetByDestination",
+	bundleRepo.On("ListByDestination",
 		mock.Anything, mock.Anything, mock.Anything).Return(nil, testErr)
 	return bundleRepo
 }
 
 func bundleRepoWithNoBundles() *automock.BundleRepo {
 	bundleRepo := unusedBundleRepo()
-	bundleRepo.On("GetByDestination",
+	bundleRepo.On("ListByDestination",
 		mock.Anything, mock.Anything, mock.Anything).Return([]*model.Bundle{}, nil)
 	return bundleRepo
 }

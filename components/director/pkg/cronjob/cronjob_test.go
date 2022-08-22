@@ -21,7 +21,7 @@ func TestCronJob(t *testing.T) {
 		SchedulePeriod      time.Duration
 	}{
 		{
-			Name:                "Should run cronJob until context end",
+			Name:                "Should run cronJob until the context end",
 			ExpectedCronJobRuns: 3,
 			FnBody: func(executionsCount int, cancelCtx context.CancelFunc) {
 				if executionsCount == 3 {
@@ -31,7 +31,7 @@ func TestCronJob(t *testing.T) {
 			SchedulePeriod: defaultSchedulePeriod,
 		},
 		{
-			Name: "Should not schedule next cronJob in parallel if execution takes more than wait period",
+			Name: "Should not schedule next cronJob in parallel if execution takes more than the wait period",
 
 			ExpectedCronJobRuns: 1,
 			FnBody: func(executionsCount int, cancelCtx context.CancelFunc) {
@@ -41,7 +41,7 @@ func TestCronJob(t *testing.T) {
 			SchedulePeriod: defaultSchedulePeriod,
 		},
 		{
-			Name:                "Should schedule next cronJob if execution takes more than wait period",
+			Name:                "Should schedule next cronJob if execution takes more than the wait period",
 			ExpectedCronJobRuns: 3,
 			FnBody: func(executionsCount int, cancelCtx context.CancelFunc) {
 				<-time.After(defaultSchedulePeriod * 2)
