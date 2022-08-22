@@ -15,8 +15,8 @@ type BundleRepo struct {
 	mock.Mock
 }
 
-// GetByDestination provides a mock function with given fields: ctx, tenantID, destination
-func (_m *BundleRepo) GetByDestination(ctx context.Context, tenantID string, destination model.DestinationInput) ([]*model.Bundle, error) {
+// ListByDestination provides a mock function with given fields: ctx, tenantID, destination
+func (_m *BundleRepo) ListByDestination(ctx context.Context, tenantID string, destination model.DestinationInput) ([]*model.Bundle, error) {
 	ret := _m.Called(ctx, tenantID, destination)
 
 	var r0 []*model.Bundle

@@ -46,7 +46,7 @@ type LabelRepo interface {
 //go:generate mockery --name=BundleRepo --output=automock --outpkg=automock --case=underscore --disable-version-string
 // BundleRepo missing godoc
 type BundleRepo interface {
-	GetByDestination(ctx context.Context, tenantID string, destination model.DestinationInput) ([]*model.Bundle, error)
+	ListByDestination(ctx context.Context, tenantID string, destination model.DestinationInput) ([]*model.Bundle, error)
 }
 
 //go:generate mockery --name=TenantRepo --output=automock --outpkg=automock --case=underscore --disable-version-string
@@ -190,7 +190,7 @@ func (d *DestinationService) mapDestinationsToTenant(ctx context.Context, tenant
 					destinationFromService.Name, tenant)
 				continue
 			}
-			bundles, err := d.BundleRepo.GetByDestination(ctxWithTransact, tenant, destination)
+			bundles, err := d.BundleRepo.ListByDestination(ctxWithTransact, tenant, destination)
 
 			if err != nil {
 				log.C(ctxWithTransact).WithError(err).Errorf(
