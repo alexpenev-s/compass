@@ -54,7 +54,7 @@ spec:
               protocol: TCP
           volumeMounts:
             - name: instances
-              mountPath: "/etc/instances/"
+              mountPath: {{ .Values.global.destinationFetcher.dependenciesConfig.path }}
               readOnly: true
           resources:
             {{- toYaml .Values.deployment.resources | nindent 12 }}
@@ -76,7 +76,7 @@ spec:
             - name: APP_DESTINATION_INSTANCE_X509_KEY_PATH
               value: {{ .Values.global.destinationFetcher.instance.x509KeyPath }}
             - name: APP_DESTINATION_SECRET_PATH
-              value: "{{ .Values.global.destinationFetcher.secretPath }}"
+              value: "{{ .Values.global.destinationFetcher.dependenciesConfig.path }}/{{ .Values.global.destinationRegionSecret.fileName }}"
             - name: APP_ENDPOINT_GET_TENANT_DESTINATIONS
               value: "{{ .Values.global.destinationFetcher.server.tenantDestinationsEndpoint }}"
             - name: APP_ENDPOINT_FIND_DESTINATION
