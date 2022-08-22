@@ -549,7 +549,7 @@ global:
       clientIdPath: "clientid"
       clientSecretPath: "clientsecret"
       urlPath: "uri"
-      tokenUrlPath: "url"
+      tokenUrlPath: "certurl"
       x509CertPath: "certificate"
       x509KeyPath: "key"
     dependenciesConfig:
