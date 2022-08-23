@@ -2,15 +2,17 @@ package cronjob
 
 import (
 	"fmt"
-	"github.com/kyma-incubator/compass/components/director/pkg/kubernetes"
-	"github.com/kyma-incubator/compass/components/director/pkg/log"
 	"os"
 
+	"github.com/kyma-incubator/compass/components/director/pkg/kubernetes"
+	"github.com/kyma-incubator/compass/components/director/pkg/log"
+
 	"context"
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	"time"
 )
 
 const hostnameEnvVar = "HOSTNAME"

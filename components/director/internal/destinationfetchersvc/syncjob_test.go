@@ -2,14 +2,15 @@ package destinationfetchersvc_test
 
 import (
 	"errors"
+	"testing"
+	"time"
+
 	"github.com/kyma-incubator/compass/components/director/internal/destinationfetchersvc"
 	"github.com/kyma-incubator/compass/components/director/internal/destinationfetchersvc/automock"
 	"github.com/kyma-incubator/compass/components/director/pkg/cronjob"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/net/context"
-	"testing"
-	"time"
 )
 
 func TestDestinationSyncJob(t *testing.T) {

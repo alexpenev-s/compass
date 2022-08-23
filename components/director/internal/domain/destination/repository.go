@@ -48,6 +48,7 @@ func (r *repository) Upsert(ctx context.Context, in model.DestinationInput, id, 
 	return r.upserter.UpsertGlobal(ctx, destination)
 }
 
+// DeleteOld deletes all destinations in a given tenant that do not have latestRevision
 func (r *repository) DeleteOld(ctx context.Context, latestRevision, tenantID string) error {
 	conditions := repo.Conditions{repo.NewNotEqualCondition(revisionColumn, latestRevision), repo.NewEqualCondition(tenantIDColumn, tenantID)}
 	return r.deleter.DeleteManyGlobal(ctx, conditions)

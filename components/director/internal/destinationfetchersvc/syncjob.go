@@ -2,11 +2,12 @@ package destinationfetchersvc
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	"github.com/kyma-incubator/compass/components/director/pkg/cronjob"
 	"github.com/kyma-incubator/compass/components/director/pkg/log"
 	"golang.org/x/sync/semaphore"
-	"sync"
-	"time"
 )
 
 //go:generate mockery --name=DestinationSyncer --output=automock --outpkg=automock --case=underscore --disable-version-string
