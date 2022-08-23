@@ -532,9 +532,10 @@ global:
       appDestinationsSyncScope: "destinations:sync"
       appDetinationsSensitiveDataScope: "destinations_sensitive_data:read"
     server:
-      tenantDestinationsEndpoint: "/v1/syncDestinations"
+      tenantDestinationsEndpoint: "/v1/subaccountDestinations"
       sensitiveDataEndpoint: "/v1/destinations"
     request:
+      skipSSLValidation: false
       retry_interval: "100ms"
       retry_attempts: 3
       goroutineLimit: 100
@@ -549,7 +550,7 @@ global:
       clientIdPath: "clientid"
       clientSecretPath: "clientsecret"
       urlPath: "uri"
-      tokenUrlPath: "url"
+      tokenUrlPath: "certurl"
       clientCertPath: "certificate"
       clientKeyPath: "key"
     secretName: destination-region-instances

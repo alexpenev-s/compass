@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/base64"
+
 	"github.com/kyma-incubator/compass/components/director/pkg/oauth"
 	"github.com/pkg/errors"
 	"github.com/tidwall/gjson"
@@ -43,6 +45,22 @@ func (c *DestinationsConfig) MapInstanceConfigs() error {
 			TokenURL:     gjson.Get(config.String(), c.InstanceTokenURLPath).String(),
 			Cert:         gjson.Get(config.String(), c.InstanceCertPath).String(),
 			Key:          gjson.Get(config.String(), c.InstanceKeyPath).String(),
+		}
+
+		if i.Cert != "" {
+			decodeCert, err := base64.StdEncoding.DecodeString(i.Cert)
+			if err != nil {
+				return errors.Wrap(err, "could not base64 decode client certificate")
+			}
+			i.Cert = string(decodeCert)
+		}
+
+		if i.Key != "" {
+			decodeKey, err := base64.StdEncoding.DecodeString(i.Key)
+			if err != nil {
+				return errors.Wrap(err, "could not base64 decode client certificate")
+			}
+			i.Key = string(decodeKey)
 		}
 
 		if err := i.validate(c.OAuthMode); err != nil {

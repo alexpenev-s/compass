@@ -36,6 +36,7 @@ type DestinationServiceAPIConfig struct {
 	PagingSizeParam               string        `envconfig:"APP_DESTINATIONS_PAGE_SIZE_PARAM,default=$pageSize"`
 	PagingCountParam              string        `envconfig:"APP_DESTINATIONS_PAGE_COUNT_PARAM,default=$pageCount"`
 	PagingCountHeader             string        `envconfig:"APP_DESTINATIONS_PAGE_COUNT_HEADER,default=Page-Count"`
+	SkipSSLVerify                 bool          `envconfig:"APP_DESTINATIONS_SKIP_SSL_VERIFY,default=false"`
 }
 
 // Client destination client
@@ -132,7 +133,8 @@ func NewClient(instanceConfig config.InstanceConfig, apiConfig DestinationServic
 
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
-			Certificates: []tls.Certificate{cert},
+			InsecureSkipVerify: apiConfig.SkipSSLVerify,
+			Certificates:       []tls.Certificate{cert},
 		},
 	}
 
