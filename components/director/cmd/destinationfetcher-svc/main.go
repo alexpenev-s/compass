@@ -18,10 +18,11 @@ package main
 
 import (
 	"context"
-	"github.com/kyma-incubator/compass/components/director/pkg/cronjob"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/kyma-incubator/compass/components/director/pkg/cronjob"
 
 	"github.com/gorilla/mux"
 	"github.com/kyma-incubator/compass/components/director/internal/authenticator"

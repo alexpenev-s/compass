@@ -220,7 +220,11 @@ func (c *Client) FetchDestinationSensitiveData(ctx context.Context, destinationN
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			log.C(req.Context()).WithError(err).Error("Unable to close response body")
+		}
+	}()
 
 	if res.StatusCode == http.StatusNotFound {
 		return nil, apperrors.NewNotFoundError(resource.Destination, destinationName)
