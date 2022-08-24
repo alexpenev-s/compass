@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"context"
+
 	"github.com/kyma-incubator/compass/components/director/pkg/pagination"
 	"github.com/kyma-incubator/compass/components/director/pkg/persistence"
 
@@ -209,6 +210,8 @@ func (r *pgRepository) ListByApplicationIDNoPaging(ctx context.Context, tenantID
 }
 
 const (
+	// QueryByNameAndURL query for getting bundles with specific correlationID and are provided
+	// by system with specific Name and URL
 	QueryByNameAndURL = `SELECT id
 	FROM bundles
 	WHERE app_id IN (
@@ -223,6 +226,8 @@ const (
 	)
 	AND correlation_ids::jsonb ? $4`
 
+	// QueryBySystemIDAndSystemType query for getting bundles with specific correlationID and are provided
+	// by system with specific ID and type
 	QueryBySystemIDAndSystemType = `SELECT id
 	FROM bundles
 	WHERE app_id IN (

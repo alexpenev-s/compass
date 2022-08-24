@@ -2,10 +2,11 @@ package cronjob_test
 
 import (
 	"context"
-	"github.com/kyma-incubator/compass/components/director/pkg/cronjob"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/kyma-incubator/compass/components/director/pkg/cronjob"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCronJob(t *testing.T) {

@@ -102,8 +102,17 @@ func (d *DestinationService) generateClientBySubdomainLabel(ctx context.Context,
 		return nil, err
 	}
 
-	subdomain := subdomainLabel.Value.(string)
-	region := regionLabel.Value.(string)
+	subdomain, ok := subdomainLabel.Value.(string)
+	if !ok {
+		log.C(ctx).Errorf("cannot cast label value as a string")
+		return nil, errors.New("cannot cast label value as a string")
+	}
+
+	region, ok := regionLabel.Value.(string)
+	if !ok {
+		log.C(ctx).Errorf("cannot cast label value as a string")
+		return nil, errors.New("cannot cast label value as a string")
+	}
 
 	instanceConfig, ok := d.DestinationsConfig.RegionToInstanceConfig[region]
 	if !ok {
