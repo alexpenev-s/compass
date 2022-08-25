@@ -12,7 +12,7 @@ import (
 type HandlerConfig struct {
 	SyncDestinationsEndpoint      string `envconfig:"APP_DESTINATIONS_SYNC_ENDPOINT,default=/v1/syncDestinations"`
 	DestinationsSensitiveEndpoint string `envconfig:"APP_DESTINATIONS_SENSITIVE_DATA_ENDPOINT,default=/v1/destinations"`
-	DestinationsQueryParameter    string `envconfig:"APP_DESTINATIONS_QUERY_PARAM,default=name"`
+	DestinationsQueryParameter    string `envconfig:"APP_DESTINATIONS_SENSITIVE_DATA_QUERY_PARAM,default=name"`
 	InternalTenantIDHeaderName    string `envconfig:"APP_INTERNAL_TENANT_ID_HEADER,default=InternalTenantId"`
 }
 
