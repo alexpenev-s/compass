@@ -534,6 +534,7 @@ global:
     server:
       tenantDestinationsEndpoint: "/v1/subaccountDestinations"
       sensitiveDataEndpoint: "/v1/destinations"
+      queryParam: "name"
     request:
       skipSSLValidation: false
       retry_interval: "100ms"
