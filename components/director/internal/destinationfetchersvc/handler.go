@@ -3,11 +3,9 @@ package destinationfetchersvc
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"strings"
-
 	"github.com/kyma-incubator/compass/components/director/pkg/apperrors"
 	"github.com/kyma-incubator/compass/components/director/pkg/log"
+	"net/http"
 )
 
 // HandlerConfig destination handler configuration
@@ -97,14 +95,4 @@ func (h *handler) FetchDestinationsSensitiveData(writer http.ResponseWriter, req
 	if _, err = writer.Write(json); err != nil {
 		log.C(ctx).WithError(err).Error("Could not write response")
 	}
-}
-
-func sliceContainsEmptyString(s []string) bool {
-	for _, e := range s {
-		if strings.TrimSpace(e) == "" {
-			return true
-		}
-	}
-
-	return false
 }
