@@ -112,33 +112,43 @@ global:
     connector:
       dir:
       version: "PR-2575"
+      name: compass-connector
     connectivity_adapter:
       dir:
       version: "PR-2575"
+      name: compass-connectivity-adapter
     pairing_adapter:
       dir:
-      version: "PR-2575"
+      version: "PR-2572"
+      name: compass-pairing-adapter
     director:
       dir:
-      version: "PR-2578"
+      version: "PR-2553"
+      name: compass-director
     hydrator:
       dir:
       version: "PR-2575"
+      name: compass-hydrator
     gateway:
       dir:
       version: "PR-2575"
+      name: compass-gateway
     operations_controller:
       dir:
       version: "PR-2575"
+      name: compass-operations-controller
     ord_service:
       dir:
-      version: "PR-75"
+      version: "PR-78"
+      name: compass-ord-service
     schema_migrator:
       dir:
-      version: "PR-2575"
+      version: "PR-2553"
+      name: compass-schema-migrator
     system_broker:
       dir:
       version: "PR-2575"
+      name: compass-system-broker
     certs_setup_job:
       containerRegistry:
         path: eu.gcr.io/kyma-project
@@ -146,13 +156,16 @@ global:
       version: "0a651695"
     external_services_mock:
       dir:
-      version: "PR-2575"
+      version: "PR-2553"
+      name: compass-external-services-mock
     console:
       dir:
       version: "PR-71"
+      name: compass-console
     e2e_tests:
       dir:
-      version: "PR-2578"
+      version: "PR-2553"
+      name: compass-e2e-tests
   isLocalEnv: false
   isForTesting: false
   oauth2:
@@ -249,6 +262,7 @@ global:
     clientIDHeaderKey: client_user
     suggestTokenHeaderKey: suggest_token
     runtimeTypeLabelKey: "runtimeType"
+    applicationTypeLabelKey: "applicationType"
     kymaRuntimeTypeLabelValue: "kyma"
     fetchTenantEndpoint: '{{ printf "https://%s.%s%s/v1/fetch" .Values.global.gateway.tls.secure.internal.host .Values.global.ingress.domainName .Values.global.tenantFetcher.prefix }}'
   auditlog:
@@ -396,7 +410,7 @@ global:
           - "x-vcap-request-id"
           - "x-broker-api-request-identity"
   kubernetes:
-    serviceAccountTokenIssuer: kubernetes/serviceaccount
+    serviceAccountTokenIssuer: https://kubernetes.default.svc.cluster.local
     serviceAccountTokenJWKS: https://kubernetes.default.svc.cluster.local/openid/v1/jwks
   ingress:
     domainName: "local.kyma.dev"
@@ -429,7 +443,7 @@ global:
     ns_adapter_timeout_ms: 3600000
     idTokenConfig:
       claims: '{"scopes": "{{ print .Extra.scope }}","tenant": "{{ .Extra.tenant }}", "consumerID": "{{ print .Extra.consumerID}}", "consumerType": "{{ print .Extra.consumerType }}", "flow": "{{ print .Extra.flow }}", "onBehalfOf": "{{ print .Extra.onBehalfOf }}", "region": "{{ print .Extra.region }}", "tokenClientID": "{{ print .Extra.tokenClientID }}"}'
-      internalClaims: '{"scopes": "application:read application:write application.webhooks:read application_template.webhooks:read webhooks.auth:read runtime:write runtime:read tenant:read tenant:write tenant_subscription:write ory_internal fetch_tenant application_template:read","tenant":"{ {{ if .Header.Tenant }} \"consumerTenant\":\"{{ print (index .Header.Tenant 0) }}\", {{ end }} \"externalTenant\":\"\"}", "consumerType": "Internal Component", "flow": "Internal"}'
+      internalClaims: '{"scopes": "application:read application:write application.webhooks:read application_template.webhooks:read webhooks.auth:read runtime:write runtime:read tenant:read tenant:write tenant_subscription:write ory_internal fetch_tenant application_template:read destinations_sensitive_data:read destinations:sync","tenant":"{ {{ if .Header.Tenant }} \"consumerTenant\":\"{{ print (index .Header.Tenant 0) }}\", {{ end }} \"externalTenant\":\"\"}", "consumerType": "Internal Component", "flow": "Internal"}'
     mutators:
       runtimeMappingService:
         config:
@@ -518,6 +532,58 @@ global:
       clientID: ""
       scopes: "openid profile email"
       path: "/oauth2/certs"
+  destinationFetcher:
+    manageSecrets: true
+    host: compass-destination-fetcher.compass-system.svc.cluster.local
+    prefix: /destination-configuration
+    port: 3000
+    jobSchedule: 10m
+    lease:
+      lockname: destinationlease
+    parallelTenants: 10
+    authentication:
+      jwksEndpoint: "http://ory-oathkeeper-api.kyma-system.svc.cluster.local:4456/.well-known/jwks.json"
+      appDestinationsSyncScope: "destinations:sync"
+      appDetinationsSensitiveDataScope: "destinations_sensitive_data:read"
+    server:
+      tenantDestinationsEndpoint: "/v1/subaccountDestinations"
+      sensitiveDataEndpoint: "/v1/destinations"
+      sensitiveDataQueryParam: "name"
+    request:
+      skipSSLValidation: false
+      retry_interval: "100ms"
+      retry_attempts: 3
+      goroutineLimit: 100
+      requestTimeout: "30s"
+      pageSize: 10
+      pageParam: "\\$page"
+      pageSizeParam: "\\$pageSize"
+      pageCountParam: "\\$pageCount"
+      pageCountHeader: "Page-Count"
+      oauthTokenPath: "/oauth/token"
+    instance:
+      clientIdPath: "clientid"
+      clientSecretPath: "clientsecret"
+      urlPath: "uri"
+      tokenUrlPath: "certurl"
+      clientCertPath: "certificate"
+      clientKeyPath: "key"
+    secretName: destination-region-instances
+    dependenciesConfig:
+      path: "/cfg/dependencies"
+    oauthMode: "oauth-mtls"
+  destinationRegionSecret:
+    secretName: "destination-region-instances"
+    fileName: "keyConfig"
+    local:
+      templateMappings:
+        xsappMapping: '{{ printf "\"%s\":\"xsappname1\"" .Values.global.tenantFetcher.xsappNamePath }}'
+        clientIDMapping: '{{ printf "\"%s\":\"client_id\"" .Values.global.destinationFetcher.instance.clientIdPath }}'
+        clientSecretMapping: '{{ printf "\"%s\":\"client_secret\"" .Values.global.destinationFetcher.instance.clientSecretPath }}'
+        urlMapping: '{{ printf "\"%s\":\"http://compass-external-services-mock.%s.svc.cluster.local:%s\"" .Values.global.destinationFetcher.instance.urlPath .Release.Namespace (.Values.service.port | toString) }}'
+        tokenURLMapping: '{{ printf "\"%s\":\"https://%s.%s:%s\"" .Values.global.destinationFetcher.instance.tokenUrlPath .Values.global.externalServicesMock.certSecuredHost .Values.global.ingress.domainName (.Values.service.certPort | toString) }}'
+        x509CertificateMapping: '{{ printf "\"%s\":\"%s\"" .Values.global.destinationFetcher.instance.clientCertPath .Values.global.connector.caCertificate }}'
+        x509KeyMapping: '{{ printf "\"%s\":\"%s\"" .Values.global.destinationFetcher.instance.clientKeyPath .Values.global.connector.caKey }}'
   tenantFetcher:
     manageSecrets: true
     host: compass-tenant-fetcher.compass-system.svc.cluster.local
@@ -547,8 +613,6 @@ global:
       tenantPathParam: "tenantId"
       regionPathParam: "region"
     dependenciesConfig:
-      secretName: "destination-region-instances"
-      file: "keyConfig"
       path: "/cfg/dependencies"
     containerName: "tenant-fetcher"
     oauth:
@@ -556,9 +620,6 @@ global:
       secret: ""
       tokenURL: '{{ printf "https://%s.%s" .Values.global.externalServicesMock.certSecuredHost .Values.global.ingress.domainName }}'
       tokenPath: "/cert/token"
-    local:
-      templateMappings:
-        xsappMapping: '{{ printf "\"%s\":\"xsappname1\"" .Values.global.tenantFetcher.xsappNamePath }}'
     secret:
       name: "compass-tenant-fetcher-secret"
       clientIdKey: "client-id"
@@ -621,9 +682,13 @@ global:
     staticPrefix: /open-resource-discovery-static/v0
     port: 3000
     defaultResponseType: "xml"
+    userContextHeader: "user_context"
+    authTokenPath: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    skipSSLValidation: false
   ordAggregator:
     name: ord-aggregator
     enabled: true
+    suspend: true
     schedule: "*/1 * * * *"
     http:
       client:
@@ -636,6 +701,8 @@ global:
       maxIdleConnections: 2
     globalRegistryUrl: http://compass-external-services-mock.compass-system.svc.cluster.local:8087/.well-known/open-resource-discovery
     maxParallelApplicationProcessors: 4
+    maxParallelDocumentsPerApplication: 10
+    containerName: "ord-aggregator"
   systemFetcher:
     enabled: false
     name: "system-fetcher"
@@ -661,7 +728,7 @@ global:
     systemsAPIFilterCriteria: ""
     # systemToTemplateMappings - how to map system properties to an existing application template
     systemToTemplateMappings: '{}'
-    templateRegion: "eu-1"
+    appTemplates: []
     templatePlaceholderToSystemKeyMappings: '[{"placeholder_name": "name","system_key": "displayName"},{"placeholder_name": "display-name","system_key": "displayName"},{"placeholder_name": "systemNumber","system_key": "systemNumber"},{"placeholder_name": "productId","system_key": "productId"},{"placeholder_name": "ppmsProductVersionId","system_key": "ppmsProductVersionId"},{"placeholder_name": "description","system_key": "productDescription", "optional": true},{"placeholder_name": "baseUrl","system_key": "additionalUrls.mainUrl", "optional":true},{"placeholder_name": "providerName","system_key": "infrastructureProvider", "optional": true}]'
     templateOverrideApplicationInput: '{"name": "{{name}}","description": "{{description}}","providerName": "{{providerName}}","statusCondition": "INITIAL","systemNumber": "{{systemNumber}}","labels": {"managed": "true","productId": "{{productId}}","ppmsProductVersionId": "{{ppmsProductVersionId}}"},"baseUrl": "{{baseUrl}}"}'
     http:
